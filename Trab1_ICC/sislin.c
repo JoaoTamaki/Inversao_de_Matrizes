@@ -118,7 +118,6 @@ void iniSisLin (SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max)
       for (unsigned int j=0; j<n; ++j) {
 	SL->A[nula][j] = 0.0;
       }
-      //SL->b[nula] = 0.0;
     } 
     else if (tipo == eqProporcional) {
       // sorteia eq a ser "proporcional" e valor
@@ -128,7 +127,6 @@ void iniSisLin (SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max)
       for (unsigned int j=0; j<n; ++j) {
 	SL->A[propDst][j] = SL->A[propSrc][j] * mult;
       }
-      //SL->b[propDst] = SL->b[propSrc] * mult;
     } 
     else if (tipo == eqCombLinear) {
       // sorteia eq a ser "combLinear"
@@ -138,7 +136,6 @@ void iniSisLin (SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max)
       for (unsigned int j=0; j<n; ++j) {
 	SL->A[combDst][j] = SL->A[combSrc1][j] + SL->A[combSrc2][j];
       }
-      //SL->b[combDst] = SL->b[combSrc1] + SL->b[combSrc2];
     }
     else if (tipo == diagDominante) {
       // aumenta o valor dos termos da diagonal principal
@@ -150,25 +147,6 @@ void iniSisLin (SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max)
       }
     }
   }
-}
-
-SistLinear_t *lerSisLin (tipoAloc_t tipo)
-{
-  unsigned int n;
-  SistLinear_t *SL;
-  
-  scanf("%d",&n);
-
-  SL = alocaSisLin (n, tipo);
-  
-  for(int i=0; i < n; ++i)
-    for(int j=0; j < n; ++j)
-      scanf ("%lg", &SL->A[i][j]);
-
-  for(int i=0; i < n; ++i)
-    scanf ("%lg", &SL->b[i]);
-  
-  return SL;
 }
 
 SistLinear_t *lerSisLinArq (FILE *arqin, tipoAloc_t tipo)
@@ -194,7 +172,12 @@ void prnSisLin (SistLinear_t *SL)
     printf("\n  ");
     for(int j=0; j < n; ++j)
       printf ("%.15g", SL->A[i][j]);
-    printf ("   |   %.15g", SL->b[i]);
+  }
+  printf("\n\n");
+  for(int i=0; i < n; ++i) {
+    printf("\n  ");
+    for(int j=0; j < n; ++j)
+      printf ("%.15g", SL->b[i][j]);
   }
   printf("\n\n");
 }
@@ -284,7 +267,7 @@ int parseArguments(int argc, char** argv, FILE** fp_in, FILE** fp_out, int *N, i
       }else if(strcmp(argv[i],"-r") == 0){
         (*N) = atoi(argv[i+1]);  
       
-      }else if(strcmp(argv[i],"-k") == 0){
+      }else if(strcmp(argv[i],"-i") == 0){
         (*k) = atoi(argv[i+1]);
         //validação da condição: k > 0
         if ((*k) <= 0){

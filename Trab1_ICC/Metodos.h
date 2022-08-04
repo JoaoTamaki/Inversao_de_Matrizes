@@ -21,9 +21,7 @@ int MatrizIndentidade(double** M, int n);
 void MultiplicaMQs(double** mA, double** mB, double** mR, int n);
 
 //----------------------------------------FUNCOES LU----------------------------------------// 
-//int FaturacaoLUMQ(double** L, double** U, int n);
-//int FatoracaoLUMQ_otimizada(double** L, double** U, int n);
-//int FatoracaoLUMQCOMPIVO(double** L, double** U, int n, int* P);
+int FatoracaoLUMQCOMPIVO(double** L, double** U, int n, int* P);
 
 void TrocaElementosVetor(int *vet, int i1, int i2);
 void trocaLinhasMQ(double **M, int n, int l1, int l2);

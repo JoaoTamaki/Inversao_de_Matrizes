@@ -38,11 +38,17 @@ int main (int argc, char** argv)
   //INICIALIZA B
   MatrizIndentidade(SL->b, SL->n);
   
-  printf("A:\n");
-  prnMatriz(SL->A, SL->n);
+  real_t **L, **U;
 
-  printf("B:\n");
-  prnMatriz(SL->b, SL->n);
+  L = (real_t**) malloc(N * sizeof(real_t*));
+  for(int i=0; i<SL->n ; i++){
+    L[i] = (real_t*) malloc(N * sizeof(real_t));
+  }
+  
+  U = (real_t**) malloc(N * sizeof(real_t*));
+  for(int i=0; i<SL->n ; i++){
+    U[i] = (real_t*) malloc(N * sizeof(real_t));
+  }
 
   //Create Look up table
   int *LUT = (int*) malloc (SL->n * sizeof(int));
@@ -50,6 +56,20 @@ int main (int argc, char** argv)
     LUT[i] = i;
   }
 
+  copia_matriz(SL->A, U, SL->n);
+  printf("U == A:\n");
+  prnMatriz(U, SL->n);
+  FatoracaoLUMQCOMPIVO(L, U, SL->n, LUT);
+
+  printf("U:\n");
+  prnMatriz(U, SL->n);
+  printf("L:\n");
+  prnMatriz(L, SL->n);
+
+  printf("LUT:\n");
+  prnVetorInt(LUT, SL->n);
+
+/*
   real_t tTotal; //Inicializa o tempo para cada iteração -> Não sei aonde começa o calculo
   //Calcula L e U:
   fatoraLU(SL_copia, LUT, &tTotal);
@@ -59,8 +79,8 @@ int main (int argc, char** argv)
   printf("LUT:\n");
   prnVetorInt (LUT, SL->n);
 
-
-  for (int iter = 0; iter < k; iter++){   
+  //for (int iter = 0; iter < k; iter++){   
+  if (k){
     //Alocação e teste
     real_t **Y, **X;
       
@@ -98,6 +118,10 @@ int main (int argc, char** argv)
 //SistLinear_t *SL, int *n, int tam_n, real_t *t_egp, real_t *t_gs, real_t *normaResiduo_gs, real_t *t_ref, int *it_ref, real_t *normaResiduo_ref
   if (!fp_in) fclose (fp_in);
   if (!fp_out) fclose (fp_out);
+*/
+  free(L);
+  free(U);
+  free(LUT);
 }
 
 
