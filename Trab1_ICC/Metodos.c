@@ -221,7 +221,7 @@ int encontraMaxColunaPivo(double** M, int pivNum, int n){
   return maxIndx;
 }
 
-int MatrizIndentidade(double** M, int n){//Talvez void não sei o q pode dar errado nessa funcao 
+void criaMatrizIdentidade(real_t **M, int n){
     for(int i=0; i<n; i++){
         for(int j=0; j<n; j++){
             if(i==j){
@@ -232,7 +232,7 @@ int MatrizIndentidade(double** M, int n){//Talvez void não sei o q pode dar err
             }
         }
     }
-    return 0;
+    return;
 }
 
 /*!
@@ -258,74 +258,6 @@ void MultiplicaMQs(double** mA, double** mB, double** mR, int n){
 }
 
 //----------------------------------------FUNCOES LU----------------------------------------// 
-
-/*!
-  \brief Fatoração LU. Decompõe a matriz U em L. 
-
-  \param L matriz triangular inferior calculada com diagonal principal igual a 1.
-  \param U matriz triangular superior calculada.
-  \param n ordem das matrizes quadradas.
-
-  \return êxito da função
-
-*/
-/*int FatoracaoLUMQ(double** L, double** U, int n){//Talvez void não sei o q pode dar errado nessa funcao
-    for(int piv=0; piv<n; piv++){
-        L[piv][piv] = 1.0;
-        double mPiv = U[piv][piv];
-        for(int i=piv+1; i<n;i++){
-            double mi = U[i][piv];
-            U[i][piv] = 0.0;
-            L[i][piv] = (mi/mPiv); //Não se espera divisão por zero teste anterior
-            for(int j=piv+1; j<n; j++){
-                U[i][j] = U[i][j] - (mi/mPiv) *U[piv][j];
-            }
-        }
-    }
-    return 0;
-}*/
-
-/*!
-  \brief FatoracaoLUMQ otimizada -> calculo de U. 
-
-  \param L matriz triangular inferior calculada com diagonal principal igual a 1.
-  \param U matriz triangular superior calculada.
-  \param n ordem das matrizes quadradas.
-
-  \return êxito da função
-
-*/
-/*int FatoracaoLUMQ_otimizada(double** L, double** U, int n){//Talvez void não sei o q pode dar errado nessa funcao
-    for(int piv=0; piv<n; piv++){
-        L[piv][piv] = 1.0;
-        double mPiv = U[piv][piv];
-        for(int i=piv+1; i<n;i++){
-            float mi = U[i][piv];
-            double op = (mi/mPiv);  //como mi e mPiv não mudam para o calculo de U no for de baixo, é possível fazer a operação uma vez apenas para reduzir as quantidade de operações matemáticas
-            U[i][piv] = 0.0;
-            L[i][piv] = op; //Não se espera divisão por zero teste anterior
-            
-            int opj = piv+1; //economizar 4 calculos por 1 a cada iteração de i
-            
-            if ((n-(opj+1)) % 2 == 0){
-                for(int j=opj; j<n; j = j+2){
-                    U[i][j] = U[i][j] - op *U[piv][j];
-                    int opr = j+1;  //economizar 3 calculos por 1 a cada iteração de j 
-                    U[i][opr] = U[i][opr] - op *U[piv][opr];
-                }
-            }else{
-                U[i][opj] = U[i][opj] - op *U[piv][opj];
-                for(int j = piv+2; j<n; j = j+2){
-                    U[i][j] = U[i][j] - op *U[piv][j];
-                    int opr = j+1;  //economizar 3 calculos por 1 a cada iteração de j
-                    U[i][opr] = U[i][opr] - op *U[piv][opr];
-                }
-            }
-        }
-    }
-    return 0;
-}*/
-
 /*!
   \brief Fatoração LU. Decompõe a matriz U em L, U e P que guarda a ordem das trocas de linha. 
 
@@ -337,7 +269,7 @@ void MultiplicaMQs(double** mA, double** mB, double** mR, int n){
   \return êxito da função
 
 */
-/*int FatoracaoLUMQCOMPIVO(double** L, double** U, int n, int* P){//Talvez void não sei o q pode dar errado nessa funcao
+int FatoracaoLUMQCOMPIVO(double** L, double** U, int n, int* P){//Talvez void não sei o q pode dar errado nessa funcao
 
     for(int piv=0; piv<n; piv++){
         
@@ -363,7 +295,7 @@ void MultiplicaMQs(double** mA, double** mB, double** mR, int n){
     }
 
     return 0;
-}*/
+}
 
 void TrocaElementosVetor(int *vet, int i1, int i2){
   int aux = vet[i1];
@@ -379,6 +311,9 @@ void trocaLinhasMQ(double **M, int n, int l1, int l2){
   M[l2] = aux;
   return;
 }
+
+
+//AINDA NÃO ESTAMOS USANDO -> SERÁ UTILIZADA NA MAIN NA PARTE QUE ESTÁ COMENTADA -> TEM QUE MUDAR (SL_COPIA->A) PARA L E U
 
 /*!
   \brief Cácula Y da equação "L Y = I" como parte da fatoração LU.
@@ -427,3 +362,11 @@ void CalculaXFROMUY(double** X, double** U, double** Y, int n){
     }
 }
 
+real_t calculaDeterminante(real_t **U, int n) {
+
+  real_t determinante = 1.0;
+
+  for (int i = 0;  i < n; ++i) 
+    determinante = determinante * U[i][i];
+  return determinante;
+}

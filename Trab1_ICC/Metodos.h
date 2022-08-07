@@ -17,13 +17,11 @@ void retrossubs(SistLinear_t *SL, int *LUT, real_t **x, int n);
 
 //----------------------------------------FUNCOES AUX----------------------------------------// 
 int encontraMaxColunaPivo(double** M, int pivNum, int n);
-int MatrizIndentidade(double** M, int n);
+void criaMatrizIdentidade(real_t **M, int n);
 void MultiplicaMQs(double** mA, double** mB, double** mR, int n);
 
 //----------------------------------------FUNCOES LU----------------------------------------// 
-//int FaturacaoLUMQ(double** L, double** U, int n);
-//int FatoracaoLUMQ_otimizada(double** L, double** U, int n);
-//int FatoracaoLUMQCOMPIVO(double** L, double** U, int n, int* P);
+int FatoracaoLUMQCOMPIVO(double** L, double** U, int n, int* P);
 
 void TrocaElementosVetor(int *vet, int i1, int i2);
 void trocaLinhasMQ(double **M, int n, int l1, int l2);
@@ -31,6 +29,6 @@ void trocaLinhasMQ(double **M, int n, int l1, int l2);
 int fatoraLU (SistLinear_t *SL, int *LUT, double *tTotal);
 void CalculaYFROML(SistLinear_t *SL, int *LUT, double** Y);
 void CalculaXFROMUY(double** X, double** U, double** Y, int n);
+real_t calculaDeterminante(real_t **U, int n);
 
 #endif // __METODOS_H__
-
