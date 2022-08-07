@@ -4,70 +4,62 @@
 #include "sislin.h"
 #include "Metodos.h"
 
-int main (int argc, char** argv)
-{
-  // inicializa gerador de números aleatóreos
+int main (int argc, char** argv) {
+  // inicializa gerador de números aleatórios
   srand(20221);
 
-  //Inicializa as variaveis de entrada do programa
+  // cria e inicializa variáveis de entrada do programa
   FILE *fp_out = stdout;
   FILE *fp_in = stdin;
   int flag_e, flag_s, flag_r, flag_i = 0;
   int N = 0;
   int k = 0;
   
+  // verifica se o argumentos de entrada são válidos
   if (parseArguments(argc, argv, &fp_in, &fp_out, &N, &k, &flag_e, &flag_s, &flag_r, &flag_i) == -1)
     return 0;
 
-  //Aloca ponteiro para o sistema linear
-  SistLinear_t *SL;
+  // aloca ponteiros para as estruturas necessárias:
+  SistLinear_t *SL;                     // SL que vai armazenar a matriz original em A e a identidade em b
+  real_t **L, **U;                      // matrizes L e U que serão usadas na fatoração LU da matriz A
+  int *LUT;                             // look up table (LUT) que será usada para armazenar as trocas de linha no pivoteamento
 
-  //Tratamento da entrada
-  if (N > 0){
+  // ALOCAÇÕES
+  // faz a alocação do SL que vai armazenar a matriz conforme o tipo de entrada
+  if (N > 0) {                          // caso a matriz seja gerada a partir de parâmetros
     SL = alocaSisLin(N, pontVet);
     iniSisLin(SL, generico, COEF_MAX);
-  }else{
-    SL = lerSisLinArq (fp_in, generico);
+  } else {                              // caso a matriz seja dada via arquivo
+    SL = lerSisLinArq(fp_in, generico);
+    N = SL->n;
+  }
+  criaMatrizIdentidade(SL->b, N);       // inicializa os valores de b como uma matriz identidade
+  L = alocaMatriz(N);                   // aloca matriz L
+  U = alocaMatriz(N);                   // aloca matriz U
+  LUT = alocaeInicilizaVetor(N);        // aloca e inicializa LUT
+
+
+  printf("Matriz original \n");  //APAGAR
+  copia_matriz(SL->A, U, N);
+  printf("U == A:\n");    // APAGAR
+  prnMatriz(U, N);        // APAGAR
+
+  FatoracaoLUMQCOMPIVO(L, U, N, LUT);
+  real_t determinante = calculaDeterminante(U, N);
+  printf("O determinante é %.15g.\n", determinante);
+  if (determinante == 0) {
+    fprintf(stderr,"A matriz não é inversível.\n");
+    exit(-1);
   }
 
-  //CRIA COPIA -> Acho que não precisa, pois temos a matriz L, U, Y e X da fatoração LU
-  SistLinear_t *SL_copia;
-  SL_copia = alocaSisLin(SL->n, pontVet);
-  copiaSisLin(SL, SL_copia);
 
-  //INICIALIZA B
-  MatrizIndentidade(SL->b, SL->n);
-  
-  real_t **L, **U;
+  printf("U:\n");         // APAGAR
+  prnMatriz(U, N);        // APAGAR
+  printf("L:\n");         // APAGAR
+  prnMatriz(L, N);        // APAGAR
 
-  L = (real_t**) malloc(N * sizeof(real_t*));
-  for(int i=0; i<SL->n ; i++){
-    L[i] = (real_t*) malloc(N * sizeof(real_t));
-  }
-  
-  U = (real_t**) malloc(N * sizeof(real_t*));
-  for(int i=0; i<SL->n ; i++){
-    U[i] = (real_t*) malloc(N * sizeof(real_t));
-  }
-
-  //Create Look up table
-  int *LUT = (int*) malloc (SL->n * sizeof(int));
-  for (int i = 0; i < SL->n; i++){
-    LUT[i] = i;
-  }
-
-  copia_matriz(SL->A, U, SL->n);
-  printf("U == A:\n");
-  prnMatriz(U, SL->n);
-  FatoracaoLUMQCOMPIVO(L, U, SL->n, LUT);
-
-  printf("U:\n");
-  prnMatriz(U, SL->n);
-  printf("L:\n");
-  prnMatriz(L, SL->n);
-
-  printf("LUT:\n");
-  prnVetorInt(LUT, SL->n);
+  printf("LUT:\n");       // APAGAR
+  prnVetorInt(LUT, N);    // APAGAR
 
 /*
   real_t tTotal; //Inicializa o tempo para cada iteração -> Não sei aonde começa o calculo
@@ -123,5 +115,3 @@ int main (int argc, char** argv)
   free(U);
   free(LUT);
 }
-
-

@@ -221,7 +221,7 @@ int encontraMaxColunaPivo(double** M, int pivNum, int n){
   return maxIndx;
 }
 
-int MatrizIndentidade(double** M, int n){//Talvez void não sei o q pode dar errado nessa funcao 
+void criaMatrizIdentidade(real_t **M, int n){
     for(int i=0; i<n; i++){
         for(int j=0; j<n; j++){
             if(i==j){
@@ -232,7 +232,7 @@ int MatrizIndentidade(double** M, int n){//Talvez void não sei o q pode dar err
             }
         }
     }
-    return 0;
+    return;
 }
 
 /*!
@@ -362,3 +362,11 @@ void CalculaXFROMUY(double** X, double** U, double** Y, int n){
     }
 }
 
+real_t calculaDeterminante(real_t **U, int n) {
+
+  real_t determinante = 1.0;
+
+  for (int i = 0;  i < n; ++i) 
+    determinante = determinante * U[i][i];
+  return determinante;
+}
