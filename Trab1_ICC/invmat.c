@@ -19,12 +19,12 @@ int main (int argc, char** argv) {
   if (parseArguments(argc, argv, &fp_in, &fp_out, &N, &k, &flag_e, &flag_s, &flag_r, &flag_i) == -1)
     return 0;
 
-  // aloca ponteiros para as estruturas necessárias:
-  SistLinear_t *SL;                     // SL que vai armazenar a matriz original em A e a identidade em b
-  real_t **L, **U;                      // matrizes L e U que serão usadas na fatoração LU da matriz A
-  int *LUT;                             // look up table (LUT) que será usada para armazenar as trocas de linha no pivoteamento
+  // aloca ponteiros e outras variáveis necessárias:
+  SistLinear_t *SL;                     // SL, que vai armazenar a matriz original em A e a identidade em b
+  real_t **L, **U;                      // matrizes L e U, que serão usadas na fatoração LU da matriz A
+  int *LUT;                             // look up table (LUT), que será usada para armazenar as trocas de linha no pivoteamento
+  real_t tFatoracaoLU;                  // armazenará o tempo de execução da fatoração LU
 
-  // ALOCAÇÕES
   // faz a alocação do SL que vai armazenar a matriz conforme o tipo de entrada
   if (N > 0) {                          // caso a matriz seja gerada a partir de parâmetros
     SL = alocaSisLin(N, pontVet);
@@ -38,20 +38,15 @@ int main (int argc, char** argv) {
   U = alocaMatriz(N);                   // aloca matriz U
   LUT = alocaeInicilizaVetor(N);        // aloca e inicializa LUT
 
-
-  printf("Matriz original \n");  //APAGAR
+  printf("Sistema com a matriz original A e a matriz identidade B:\n"); // APAGAR
+  prnSisLin(SL);          // APAGAR
   copia_matriz(SL->A, U, N);
   printf("U == A:\n");    // APAGAR
   prnMatriz(U, N);        // APAGAR
 
-  FatoracaoLUMQCOMPIVO(L, U, N, LUT);
-  real_t determinante = calculaDeterminante(U, N);
-  printf("O determinante é %.15g.\n", determinante);
-  if (determinante == 0) {
-    fprintf(stderr,"A matriz não é inversível.\n");
-    exit(-1);
-  }
-
+  // faz a fatoração LU e armazena as trocas de linha na LUT
+  FatoracaoLU_PivoParcial(L, U, N, LUT, &tFatoracaoLU);
+  printf("Tempo da fatoração LU: %lf\n\n", tFatoracaoLU);  // MUDAR PRA SAÍDA E APAGAR
 
   printf("U:\n");         // APAGAR
   prnMatriz(U, N);        // APAGAR
@@ -59,10 +54,19 @@ int main (int argc, char** argv) {
   prnMatriz(L, N);        // APAGAR
 
   printf("LUT:\n");       // APAGAR
-  prnVetorInt(LUT, N);    // APAGAR
+  prnVetorInt(LUT, N);    // APAGAR 
+
+  // calcula o determinante para saber se a matriz é inversível (determinante != 0)
+  real_t determinante = calculaDeterminante(U, N);
+  printf("O determinante é %.15g.\n", determinante);        // APAGAR
+  if ((determinante > -ERRO) && (determinante < ERRO)) {
+    fprintf(stderr,"A matriz não é inversível.\n");
+    exit(-3);
+  }
+
+
 
 /*
-  real_t tTotal; //Inicializa o tempo para cada iteração -> Não sei aonde começa o calculo
   //Calcula L e U:
   fatoraLU(SL_copia, LUT, &tTotal);
   //Printa resultado: LU e Look up table

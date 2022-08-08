@@ -14,12 +14,12 @@
     tempo = timestamp() - tempo;
 */
 
-/*double timestamp(void)
+double timestamp(void)
 {
   struct timespec tp;
   clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
   return((double)(tp.tv_sec*1.0e3 + tp.tv_nsec*1.0e-6));
-}*/
+}
 
 /* Gera string '<baseName>_n'
  * Por exemplo, se baseName = "ABC" e n = 10,

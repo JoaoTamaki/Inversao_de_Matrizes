@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <float.h>
+
 #include "utils.h"
 #include "sislin.h"
 #include "Metodos.h"
@@ -11,6 +13,7 @@ int encontraMax(real_t **M, int *LUT, int i, int n){
   
   int maior = M[LUT[i]][i];
   int indice = LUT[i];
+
   for (int k = i+1; k < n; k++){
     if (maior < M[LUT[k]][i]){
       maior = M[LUT[k]][i];
@@ -37,46 +40,7 @@ void retrossubs(SistLinear_t *SL, int *LUT, real_t **x, int n) {  //resolução 
   }
 }
 
-/*!
-  \brief Método da Fatoração LU. Decompõe a Matriz A em L(na parte inferior da diagonal principal) e U(da diagonal
-         principal para cima)
 
-  \param SL Ponteiro para o sistema linear
-  \param LUT ponteiro para a look up table
-  \param tTotal tempo total em milisegundos gastos pelo método
-  \param n numero da linha de b
-  
-  \return código de erro. 0 em caso de sucesso.
-*/
-int fatoraLU (SistLinear_t *SL, int *LUT, double *tTotal)
-{
-  //*tTotal = timestamp();
-  /* para cada linha a partir da primeira */
-  
-  for (int i=0; i < SL->n; ++i) {
-    int iPivo = encontraMax(SL->A, LUT, i, SL->n);
-    if ( LUT[i] != iPivo ){
-      int aux = LUT[i];
-      LUT[i] = iPivo;
-      LUT[iPivo] = aux;
-    }
-
-    for(int k=i+1; k < SL->n; ++k) {
-      double m = SL->A[LUT[k]][i] / SL->A[LUT[i]][i];           //Calcula multiplicador
-      SL->A[LUT[k]][i] = m;                                     //Atualiza L
-      for(int j=i+1; j < SL->n; ++j){
-        SL->A[LUT[k]][j] -= SL->A[LUT[i]][j] * m;               //Atualiza U
-      }
-      for(int j=0; j < SL->n; j++){                             //Atualiza a matriz identidade
-        if (SL->b[LUT[i]][j] != 0.0)                            //Só faz quando a posição i,j não for 0 
-          SL->b[LUT[k]][j] -= SL->b[LUT[i]][j] * m;             //calculo do novo b
-      }      
-    }
-  }
-
-  //*tTotal = timestamp() - *tTotal;
-  return 0;
-}
 
 /*!
   \brief Método da Eliminação de Gauss
@@ -207,13 +171,24 @@ int fatoraLU (SistLinear_t *SL, int *LUT, double *tTotal)
 }
 */
 
-//----------------------------------------FUNCOES AUX----------------------------------------// 
+//----------------------------------------FUNÇÕES AUX----------------------------------------// 
 
-int encontraMaxColunaPivo(double** M, int pivNum, int n){
+/*!
+  \brief Encontra o maior valor de uma coluna: pivô
+
+  \param M ponteiro para a matriz
+  \param pivNum índice da linha em análise que pode ser trocada pela linha pivô
+  \param n tamanho da matriz
+
+  \return índice da linha correspondente ao pivô (que tem o maior valor da coluna.
+  */
+int encontraMaxColunaPivo(double** M, int pivNum, int n) {
+
   int maxIndx = pivNum;
   double max = fabs(M[pivNum][pivNum]);
-  for(int i= pivNum+1; i<n; i++){
-    if(fabs(M[i][pivNum])> max){
+
+  for (int i = pivNum + 1; i < n; i++) {
+    if (fabs(M[i][pivNum]) > max) {
       max = fabs(M[i][pivNum]);
       maxIndx = i;
     }
@@ -221,81 +196,125 @@ int encontraMaxColunaPivo(double** M, int pivNum, int n){
   return maxIndx;
 }
 
-void criaMatrizIdentidade(real_t **M, int n){
-    for(int i=0; i<n; i++){
-        for(int j=0; j<n; j++){
-            if(i==j){
-                M[i][j]=1.0;
-            }
-            else{
-                M[i][j]=0.0;
-            }
-        }
+/*!
+  \brief Inicializa valores de B como uma matriz identidade de mesma ordem que A
+
+  \param M ponteiro para a matriz
+  \param n tamanho da matriz
+
+  \return B inicializado com a matriz identidade.
+  */
+void criaMatrizIdentidade(real_t **M, int n) {
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      if(i == j)
+        M[i][j] = 1.0;
+      else 
+        M[i][j] = 0.0;
     }
-    return;
+  }
+
+  return;
 }
 
 /*!
-  \brief Essa função multiplicas matrizes quadradas de mesma ordem. Ou seja, mR = mA x mB
+  \brief Esta função multiplica matrizes quadradas de mesma ordem. Ou seja, mR = mA x mB
 
-  \param mA matriz da esquerda participante da multiplicação. 
-  \param mB matriz da direita participante da multiplicação.
-  \param mR matriz da resultante da multiplicação.
-  \param n  ordem das matrizes quadradas.
+  \param mA matriz da esquerda participante da multiplicação 
+  \param mB matriz da direita participante da multiplicação
+  \param mR matriz da resultante da multiplicação
+  \param n  ordem das matrizes quadradas
 
   \return 
 
 */
-void MultiplicaMQs(double** mA, double** mB, double** mR, int n){
-    for(int mri=0; mri<n; mri++){
-        for(int mrj=0; mrj<n; mrj++){
-            mR[mri][mrj] = 0.0;
-            for(int i=0; i<n; i++){
-                mR[mri][mrj] += mA[mri][i] * mB[i][mrj];
-            }
-        }
+void MultiplicaMQs(double** mA, double** mB, double** mR, int n) {
+
+  for (int mri = 0; mri < n; mri ++) {
+    for (int mrj = 0; mrj < n; mrj++) {
+      mR[mri][mrj] = 0.0;
+        for (int i = 0; i < n; i++)
+          mR[mri][mrj] += mA[mri][i] * mB[i][mrj];
     }
+  }
+
+  return;  
 }
 
-//----------------------------------------FUNCOES LU----------------------------------------// 
 /*!
-  \brief Fatoração LU. Decompõe a matriz U em L, U e P que guarda a ordem das trocas de linha. 
+  \brief Calcula o determinante de uma matriz triangular superior
 
-  \param L matriz triangular inferior calculada com diagonal principal igual a 1.
-  \param U matriz triangular superior calculada.
-  \param P vetor que guarda as trocas de linhas durante o pivoteamento. 
-  \param n ordem das matrizes quadradas.
+  \param M ponteiro para a matriz
+  \param n tamanho da matriz
 
-  \return êxito da função
+  \return o valor do determinante
 
 */
-int FatoracaoLUMQCOMPIVO(double** L, double** U, int n, int* P){//Talvez void não sei o q pode dar errado nessa funcao
+real_t calculaDeterminante(real_t **M, int n) {
 
-    for(int piv=0; piv<n; piv++){
-        
-        int newPiv = encontraMaxColunaPivo(U, piv, n);
+  real_t determinante = 1.0;
 
-        if(piv!=newPiv){
-            //Troca Linhas 
-            trocaLinhasMQ(U, n, piv, newPiv);
-            trocaLinhasMQ(L, n, piv, newPiv);
-            TrocaElementosVetor(P, piv, newPiv);
-        }        
-
-        L[piv][piv] = 1.0;
-        double mPiv = U[piv][piv];
-        for(int i=piv+1; i<n;i++){
-            float mi = U[i][piv];
-            U[i][piv] = 0.0;
-            L[i][piv] = (mi/mPiv); //não se espera divisão por zero devido pivoteamento
-            for(int j=piv+1; j<n; j++){
-                U[i][j] = U[i][j] - (mi/mPiv) *U[piv][j];
-            }
-        }
-    }
-
-    return 0;
+  for (int i = 0;  i < n; ++i) 
+    determinante = determinante * M[i][i];
+  return determinante;
 }
+
+//----------------------------------------FUNÇÕES LU----------------------------------------// 
+/*!
+  \brief Fatoração LU. Decompõe a matriz U em L, U e P que guarda a ordem das trocas de linha.
+  \Para isso, a função executa uma Eliminação de Gauss com pivoteamento parcial. 
+
+  \param L matriz triangular inferior calculada com diagonal principal igual a 1
+  \param U matriz triangular superior calculada
+  \param P vetor que guarda as trocas de linhas durante o pivoteamento 
+  \param n ordem das matrizes quadradas
+  \param tTotal tempo total em milisegundos gastos pelo método
+
+  \return código de erro. 0 em caso de sucesso.
+
+*/
+
+int FatoracaoLU_PivoParcial(double** L, double** U, int n, int* P, double *tTotal) {
+
+  *tTotal = timestamp();
+
+  // ESCALONAMENTO: PIVOTEAMENTO PARCIAL DA MATRIZ A COPIADA EM U, 
+  // COM TRIANGULAÇÃO RESULTANDO EM MATRIZ SUPERIOR
+  for (int piv = 0; piv < n; piv++) {               // para cada equação (linha) da matriz A 
+    int newPiv = encontraMaxColunaPivo(U, piv, n);  // encontra o maior valor da coluna correspondente
+    
+    if (piv != newPiv) {                            // se o índice da linha pivô for diferente do índice da equação atual
+      trocaLinhasMQ(U, n, piv, newPiv);             // troca linha de U atual pela linha pivô
+      trocaLinhasMQ(L, n, piv, newPiv);             // troca linha de L atual pela linha pivô
+      TrocaElementosVetor(P, piv, newPiv);          // armazena a troca na LUT
+    }  
+    L[piv][piv] = 1.0;                              // insere 1 na linha atual, na posição da diagonal principal de L
+    double mPiv = U[piv][piv];
+
+    for (int i = piv + 1; i < n; i++) {             // para cada coluna/ componente subsequente
+      float mi = U[i][piv];
+      U[i][piv] = 0.0;                              // vai zerando a parte superior da matriz U
+      L[i][piv] = (mi/mPiv);                        // calcula o valor do multiplicador m
+      if (isfinite(L[i][piv]) == 0) {
+        fprintf(stderr, "O cálculo de um multiplicador de L na fatoração LU deu infinity ou NaN.\n");
+        exit(-1);
+      }
+      for (int j = piv + 1; j < n; j++) {           // para o próximo elemento da linha da matriz U em diante
+        U[i][j] -= L[i][piv] * U[piv][j];           // calcula o valor do novo coeficiente de U
+        if (isfinite(U[i][j]) == 0) {
+          fprintf(stderr, "O cálculo de um coeficiente de U na fatoração LU deu underflow ou overflow.\n");
+          exit(-2);
+        }
+      }
+    }
+  }
+    
+  *tTotal = timestamp() - *tTotal;
+  return 0;
+}
+
+
 
 void TrocaElementosVetor(int *vet, int i1, int i2){
   int aux = vet[i1];
@@ -327,15 +346,16 @@ void trocaLinhasMQ(double **M, int n, int l1, int l2){
   \param L matriz da fatoração LU. Matriz triangular inferior cuja diagonal principal consiste em somente 1's. 
 
 */
-void CalculaYFROML(SistLinear_t *SL, int *LUT, double** Y){
-    for(int yj = 0; yj < SL->n; yj++){
-        for(int i = 0; i < SL->n; i++){
-            for(int j = 0; j < i; j++){
-                Y[LUT[i]][yj] -= SL->A[LUT[i]][j] * Y[LUT[j]][yj];
-            }
-        }
+void CalculaYFROML(SistLinear_t *SL, int *LUT, double** Y) {
+
+  for (int yj = 0; yj < SL->n; yj++) {
+    for (int i = 0; i < SL->n; i++) {
+      for (int j = 0; j < i; j++) {
+        Y[LUT[i]][yj] -= SL->A[LUT[i]][j] * Y[LUT[j]][yj];
+      }
     }
-    return;
+  }
+  return;
 }
 
 /*!
@@ -362,11 +382,3 @@ void CalculaXFROMUY(double** X, double** U, double** Y, int n){
     }
 }
 
-real_t calculaDeterminante(real_t **U, int n) {
-
-  real_t determinante = 1.0;
-
-  for (int i = 0;  i < n; ++i) 
-    determinante = determinante * U[i][i];
-  return determinante;
-}
