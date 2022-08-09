@@ -4,6 +4,40 @@
 #include "sislin.h"
 #include "Metodos.h"
 
+int calculaInversa(real_t **L, real_t **U, real_t **I, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
+
+  double tempo;
+  int erro;
+
+  real_t *y = (real_t*)malloc(n * sizeof(real_t));
+  real_t *x = (real_t*)malloc(n * sizeof(real_t));
+    
+  for(int i = 0; i < n; i++) {
+
+    tempo = timestamp();
+    CalculaYFROML(L, n, LUT, i, y);
+    *tTotalY += timestamp() - tempo;
+
+    tempo = timestamp();
+    CalculaXFROMUY(U, y, n, x);
+    *tTotalX += timestamp() - tempo;
+
+    for(int j = 0; j < n; j++) {
+      I[i][j] = x[j];
+    }
+  }
+    printf("I:\n");         // APAGAR
+    prnMatriz(I, n);        // APAGAR
+
+    free(y);
+    free(x);
+
+    *tTotalY /= n;
+    *tTotalX /= n;
+    return 0;
+}
+
+
 int main (int argc, char** argv) {
   // inicializa gerador de números aleatórios
   srand(20221);
@@ -64,7 +98,41 @@ int main (int argc, char** argv) {
     exit(-3);
   }
 
+  // cria copia
+  SistLinear_t *SL_copia;
+  SL_copia = alocaSisLin(SL->n, pontVet);
+  copiaSisLin(SL, SL_copia);
 
+  real_t **I;
+  I = alocaMatriz(N);
+  double tTotalY, tTotalX;
+  int erro;
+  erro = calculaInversa(L, U, I, LUT, N, &tTotalY, &tTotalX);
+
+/*
+  for (int i = 0; i < SL->n; i++){
+    real_t *L_atual = (real_t*) malloc(N * N * sizeof(real_t)); 
+    real_t *U1_atual = (real_t*) malloc(N * N * sizeof(real_t)); 
+
+    real_t *Y_atual = (real_t*) malloc(N * N * sizeof(real_t)); 
+    real_t *X_atual= (real_t*) malloc(N * N * sizeof(real_t)); 
+
+    //Calcula Y:
+    retrossubs(SL_copia, LUT, Y, i);
+    CalculaYFROML(SL, LUT, Y);
+    printf("Y:\n");
+    prnMatriz(Y, SL_copia->n);
+
+    //Calcula X:
+    CalculaXFROMUY(X, U, Y, SL->n);
+    printf("X:\n");
+    prnMatriz(X, SL->n);
+
+  }
+    //libera tudo
+    //free(X);
+    //free(Y);
+*/  
 
 /*
   //Calcula L e U:

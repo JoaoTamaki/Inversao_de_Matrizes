@@ -9,78 +9,6 @@
 
 //----------------------------------------FUNCOES LAB1----------------------------------------// 
 
-int encontraMax(real_t **M, int *LUT, int i, int n){
-  
-  int maior = M[LUT[i]][i];
-  int indice = LUT[i];
-
-  for (int k = i+1; k < n; k++){
-    if (maior < M[LUT[k]][i]){
-      maior = M[LUT[k]][i];
-      indice = LUT[k];
-    }
-  }
-  return indice;
-}
-
-/*void copiaVetor(real_t *a, real_t *b, int k){
-
-  for(int i = 0; i < k; i++){
-    b[i] = a[i];
-  }
-}*/
-
-void retrossubs(SistLinear_t *SL, int *LUT, real_t **x, int n) {  //resolução de SL triangulares
-
-  for (int i = SL->n-1; i >= 0; --i) {
-    x[LUT[i]][n] = (SL->b[LUT[i]][i]);                   
-    for (int j = i+1; j < SL->n; ++j)
-      x[LUT[i]][n] -= SL->A[LUT[i]][j] * x[LUT[j]][n];
-    x[LUT[i]][n] /= SL->A[i][i];
-  }
-}
-
-
-
-/*!
-  \brief Método da Eliminação de Gauss
-
-  \param SL Ponteiro para o sistema linear
-  \param x ponteiro para o vetor solução
-  \param tTotal tempo total em milisegundos gastos pelo método
-  \param n numero da linha de b
-
-  \return código de erro. 0 em caso de sucesso.
-*/
-//int eliminacaoGauss (SistLinear_t *SL, int *LUT, real_t *x, double *tTotal)
-//{
-  //*tTotal = timestamp();
-  /* para cada linha a partir da primeira */
-/*  
-  for (int i=0; i < SL->n; ++i) {
-    int iPivo = encontraMax(SL->A, LUT, i, SL->n);
-    //printf("%d\n", iPivo);
-    if ( i != iPivo ){
-      int aux = LUT[i];
-      LUT[i] = iPivo;
-      LUT[iPivo] = aux;
-    }
-    for(int k=i+1; k < SL->n; ++k) {
-      double m = SL->A[k][i] / SL->A[i][i];
-      SL->A[k][i] = 0.0;
-      for(int j=i+1; j < SL->n; ++j)
-        SL->A[k][j] -= SL->A[i][j] * m;
-      for(int j=0; j < SL->n; j++){                       //Atualiza a matriz identidade
-        if (SL->b[i][j] != 0.0)                           //Só faz quando a posição i,j não for 0 
-          SL->b[k][j] -= SL->b[i][j] * m;                 //Calculo do novo b
-      }  
-    }
-  }
-  //retrossubs(SL, x);
-  //*tTotal = timestamp() - *tTotal;
-  return 0;
-}*/
-
 /*!
   \brief Essa função calcula a norma L2 do resíduo de um sistema linear 
 
@@ -314,8 +242,6 @@ int FatoracaoLU_PivoParcial(double** L, double** U, int n, int* P, double *tTota
   return 0;
 }
 
-
-
 void TrocaElementosVetor(int *vet, int i1, int i2){
   int aux = vet[i1];
   vet[i1] = vet[i2];
@@ -331,54 +257,57 @@ void trocaLinhasMQ(double **M, int n, int l1, int l2){
   return;
 }
 
-
-//AINDA NÃO ESTAMOS USANDO -> SERÁ UTILIZADA NA MAIN NA PARTE QUE ESTÁ COMENTADA -> TEM QUE MUDAR (SL_COPIA->A) PARA L E U
-
 /*!
   \brief Cácula Y da equação "L Y = I" como parte da fatoração LU.
-         Utiliza várias (forward) substituições onde uma coluna de x "Yci" pode ser calculada através de L e uma coluna de "I";
-         Ou seja, ao invés de fazer a (forward) substituição da forma convencional Ay=b. É feita coluna a coluna até termos todas colunas de Y.
-         Para simplificar essa conta Y é considerado já iniciado como I.
-         Além disso, as divisões que apareceriam não aparecem, pois 1 é o elemento neutro da multiplicação.
-         E, a matriz L contem somente somente "1"s na sua diagonal principal.  
 
-  \param Y matriz a ser cáculada previamente iniciada como I.
   \param L matriz da fatoração LU. Matriz triangular inferior cuja diagonal principal consiste em somente 1's. 
+  \param n tamanho n do sistema linear.
+  \param LUT Look up table.
+  \param n indice da Look up teble.
+  \param t vetor y a ser calculado, que é usado para calcula Ux = y.
 
 */
-void CalculaYFROML(SistLinear_t *SL, int *LUT, double** Y) {
-
-  for (int yj = 0; yj < SL->n; yj++) {
-    for (int i = 0; i < SL->n; i++) {
-      for (int j = 0; j < i; j++) {
-        Y[LUT[i]][yj] -= SL->A[LUT[i]][j] * Y[LUT[j]][yj];
-      }
-    }
+void CalculaYFROML(real_t **L, int n, int *LUT, int k, real_t* y) {
+  
+  real_t *b = (real_t*)malloc(n * sizeof(real_t));
+  for(int i = 0; i < n; i++) {
+    b[i] = 0.0;
   }
+  b[LUT[k]] = 1.0;
+  
+  for (int i = 0; i < n; i++) {
+    y[i] = b[i];
+    for (int j = 0; j < i; j++)
+      y[i] -= L[i][j] * y[j];
+    y[i] /= L[i][i];
+  }
+
+//  printf("L:\n");
+//  prnMatriz(L, n);
+  printf("y:\n");
+  prnVetor(y, n);
+//  printf("b:\n");
+//  prnVetor(b, n);
+
+  free(b);
   return;
 }
 
 /*!
   \brief Cácula X da equação "U X = Y" como parte da fatoração LU.
-         Utiliza várias retrosubstiruições onde uma coluna de x "Xci" pode ser calculada através de U e uma coluna de "Yci";
-         Ou seja, ao invés de fazer a retrosubstituição da forma convencional Ax=b. É feita coluna a coluna até termos todas colunas de X.
 
-  \param X matriz a ser cáculada.
-  \param U matriz da fatoração LU. Matriz triangular superior. 
-  \param Y matriz da previamente calculada usando L.
+  \param U matriz da fatoração LU. Matriz triangular superior.  
+  \param y vetor y previamente calculada na função CalculaYFROML.
   \param n  ordem das matrizes quadradas.
-
+  \param x vetor x a ser calculado, que é uma linha da matriz identidade.
 */
-void CalculaXFROMUY(double** X, double** U, double** Y, int n){
-    for(int xj=0; xj<n; xj++){  
-        //Retrosubstituicao Adaptada
-        for(int i= n-1; i>=0; i--){
-            X[i][xj]=Y[i][xj];
-            for(int j= i+1; j<n; j++){
-                X[i][xj] -= U[i][j] * X[j][xj];
-            }
-            X[i][xj] /= U[i][i];
-        }
-    }
+void CalculaXFROMUY(real_t **U, real_t* y, int n, real_t *x){
+  for (int i = n-1; i >= 0; --i) {
+    x[i] = y[i];
+    for (int j = i; j < n; ++j)
+      x[i] -= U[i][j] * x[j];
+    x[i] /= U[i][i];
+  }
+  return;
 }
 
