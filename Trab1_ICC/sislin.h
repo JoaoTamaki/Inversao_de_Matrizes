@@ -40,7 +40,8 @@ SistLinear_t *lerSisLinArq (FILE *arqin, tipoAloc_t tipo);
 void prnSisLin (SistLinear_t *SL);
 void prnVetorInt (int *v, unsigned int n);
 void prnVetor (real_t *v, unsigned int n);
-void prnMatriz (real_t **m, unsigned int n);
+void prnMatriz(FILE *fp_out, real_t **m, unsigned int n);
+void printaMatriz(real_t **m, unsigned int n);
 
 // Outras funções úteis
 int copia_matriz(real_t **x, real_t **y, int n);

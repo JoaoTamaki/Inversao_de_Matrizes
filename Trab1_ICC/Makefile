@@ -18,8 +18,5 @@ $(PROG):  $(OBJS)
 
 clean:
 	@rm -f *~ *.bak
-
-purge:   clean
 	@rm -f *.o core a.out
 	@rm -f $(PROG)
-

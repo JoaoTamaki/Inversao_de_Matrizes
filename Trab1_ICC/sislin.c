@@ -183,10 +183,20 @@ void prnVetor(real_t *v, unsigned int n) {
   printf ("\n\n");
 }
 
-void prnMatriz(real_t **m, unsigned int n) {
+void prnMatriz(FILE *fp_out, real_t **m, unsigned int n) {
   int i, j;
 
-  printf ("\n");
+  for (i = 0; i < n; ++i) {
+    for (j = 0; j < n; j++)
+      fprintf (fp_out, "%.15g ", m[i][j]);
+    fprintf (fp_out, "\n");
+  }
+  fprintf (fp_out, "\n\n");
+}
+
+void printaMatriz(real_t **m, unsigned int n) {
+  int i, j;
+
   for (i = 0; i < n; ++i) {
     for (j = 0; j < n; j++)
       printf ("%.15g ", m[i][j]);

@@ -110,3 +110,12 @@ void CalculaYFROML(real_t **L, int n, int *LUT, int k, real_t* y);
 void CalculaXFROMUY(real_t **U, real_t* y, int n, real_t *x);
 int calculaInversa(real_t **L, real_t **U, real_t **I, int *LUT, unsigned int n, double *tTotalY, double *tTotalX);
 ```
+
+## Problemas
+
+Devido alguns problemas, a equipe não conseguiu terminar o trabalho. Devido a isso, faltou métodos como o refinamento e o calculo de norma de cada iteração (para k iterações, como foi colocado na especificação do trabalho feito pelo professor). Apenas foi calculado a primeira inversa, que por
+não ser refinada, tem uma boa diferença da resposta que deveria chegar.
+
+## Pontos positivos
+
+Foi possível explorar bem a parte de erros no que foi implementado, foi feito testes de mesa para acompanha a execução dos algoritmos até o que foi possível, foi possível progredir bastante mesmo devido os problemas, foi modularizado com funções para cada etapa e por pouco que não foi terminado tudo, que foram limpos para uma entrega do que foi possível ser feito.
