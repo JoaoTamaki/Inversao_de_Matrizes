@@ -6,32 +6,28 @@
 
 /*! LISTA DE MELHORIAS
 Duvidas:
-  -> O que deve ser feito de mudança para cada iteração do resíduo?
-  -> Como usar alligned_alloc
-  -> Questão de fazer matriz linear e colunar -> Stride
-  -> Revisar restrict e inline
-  -> Qual a necessidade de fazer padding?
-  -> No texto de entrega DEVE CONSTAR OBRIGATORIAMENTE o Nome e Números de Registro Acadêmico (RA) dos membros do grupo. (???)
-  
+  FEITO!
+
 O que já era feito antes:
   -> Look up table
+  -> Eliminar stride na multiplicação de matrizes 
 
-Gerais:
+O que foi feito:
   -> Matrizes alocadas contiguamente -> Melhorando o acesso a memória
   -> Economização de operações matemáticas
 
-Possíveis melhorias:
-  -> void *aligned_alloc(alignment, size)
-  -> Verificar stride
-  -> Verificar restrict
-  -> Verificar inline
-  -> Padding
-  -> Realizar loop unroll and jam
-
 O que deve ser feito:
-  -> Tirar dúvidas
+  -> CALCULO DO W E ARRUMAR REFINAMENTO
+  -> Alligned_alloc -> Colunas não potências de 2 e linhas pode ser igual
+  -> Questão de fazer matriz linear e colunar -> Fazer a tranposta apenas para a impressão para evitar Stride no acesso aos dados (multiplicação de matriz)
+  -> Restrict: Não aponta para o mesmo espaço de memória(vetor, matriz, ...)
+  -> Inline: Tem que estar no mesmo codigo para expandir a função e eliminar o custo de empilhar parâmetros. 
+  -> Padding -> Evitar cache trashing
+  -> Calcular o w para somar com o A inicial
   -> Instrumentar LIKWID nas duas versões
   -> Realizar loop unroll and jam
+
+Testes:
   -> N={32, 33, 64, 65, 128, 129, 256, 257, 512, 1000, 2000, 4000 6000 10000}
   -> -i 10
   -> Matrizes sempre aleatórias
@@ -46,14 +42,17 @@ O que deve ser feito:
         Cache miss L1: utilizar o grupo CACHE ou L1CACHE do LIKWID, e apresentar o resultado de "data cache miss ratio".
         Caso não tenha o cache miss da L1, utilize o cache miss da L2 (grupo L2CACHE)
         Operações aritméticas: utilizar o grupo FLOPS_DP ou FLOPS_AVX do LIKWID, e apresentar o resultado de "MFLOP/s"
+
+    ######L3 e L2CACHE
+
+Apresentação:
   -> Realizar PDF com os gráficos e textos auxiliares
       O pacote deve ser arquivado e compactado com tar(1) e gzip(1) em um arquivo chamado login1-login2.tar.gz
       O arquivo contendo o relatório deve ser nomeado RELATORIO-login1-login2.pdf.
       Além disso, a conclusão deve apresentar os aspectos que sua equipe considerou mais relevantes/importantes no desenvolvimento do trabalho.
+  -> No texto de entrega DEVE CONSTAR OBRIGATORIAMENTE o Nome e Números de Registro Acadêmico (RA) dos membros do grupo.
 
 */
-
-
 
 int main (int argc, char** argv) {
   // inicializa gerador de números aleatórios

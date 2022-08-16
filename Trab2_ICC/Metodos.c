@@ -25,6 +25,15 @@ real_t normaL2Residuo(SistLinear_t *SL, real_t *I, real_t *R, int n, double *tTe
       R[mult+j] = SL->b[mult+j] - R[mult+j]; 
     }
   }
+
+
+
+  //r precisa ser trocada as linhas 
+  //Fazer Ly = r para cada linha
+  //Fazer Uw = y para cada linha
+  //Construir matriz W
+
+
   //printaMatriz(R, n);
 
   //Calcula norma do resíduo
@@ -67,7 +76,7 @@ void MultiplicaMQs(real_t* mA, real_t* mB, real_t* mR, int n) {
   \param pivNum índice da linha em análise que pode ser trocada pela linha pivô
   \param n tamanho da matriz
   \return índice da linha correspondente ao pivô (que tem o maior valor da coluna.
-  */
+*/
 int encontraMaxColunaPivo(double* M, int pivNum, int n) {
 
   int maxIndx = pivNum;
@@ -89,7 +98,7 @@ int encontraMaxColunaPivo(double* M, int pivNum, int n) {
   \param M ponteiro para a matriz
   \param n tamanho da matriz
   \return B inicializado com a matriz identidade.
-  */
+*/
 void criaMatrizIdentidade(real_t *M, int n) {
 
   for (int i = 0; i < n; i++) {
@@ -225,6 +234,59 @@ void CalculaXFROMUY(real_t *U, real_t* y, int n, real_t *x){
   }
   return;
 }
+
+/*!
+  \brief Calcula matriz inversa usando fatoração LU e eliminação de Gauss 
+  \param L matriz da fatoração LU. Matriz triangular inferior cuja diagonal principal consiste em somente 1's.
+  \param U matriz da fatoração LU. Matriz triangular superior.  
+  \param I matriz que armazenará a inversa de A.
+  \param LUT Look up table que armazena as trocas de linha em b.
+  \param n tamanho n do sistema linear.
+  \param t vetor y a ser calculado, que é usado para calcula Ux = y.
+  \param tTotalY médio para cáculo de y.
+  \param tTotalX médio para cáculo de x.
+*/
+/*int calculaW(real_t *L, real_t *U, real_t *I, real_t *R, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
+
+  double tempo;
+  int erro;
+
+  real_t *y = (real_t*)malloc(n * sizeof(real_t));
+  real_t *x = (real_t*)malloc(n * sizeof(real_t));
+  real_t *b = (real_t*)malloc(n * sizeof(real_t));
+
+  for(int i = 0; i < n; i++) {
+
+    //inicializa b
+    for(int j = 0; j < n; j++) {    
+      b[j] = 0.0;
+    }
+    b[LUT[i]] = 1.0;
+
+    tempo = timestamp();
+    CalculaYFROML(L, n, LUT, i, y,b);
+    *tTotalY += timestamp() - tempo;
+
+    tempo = timestamp();
+    CalculaXFROMUY(U, y, n, x);
+    *tTotalX += timestamp() - tempo;
+
+    for(int j = 0; j < n; j++) {
+      I[LUT[i]*n+j] = x[j];
+    }
+  }
+
+  free(y);
+  free(x);
+  free(b);
+
+  *tTotalY /= n;
+  *tTotalX /= n;
+  return 0;
+}*/
+
+
+
 
 /*!
   \brief Calcula matriz inversa usando fatoração LU e eliminação de Gauss 
