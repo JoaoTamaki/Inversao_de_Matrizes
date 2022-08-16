@@ -50,30 +50,53 @@ int main (int argc, char** argv) {
     exit(-3);
   }
 
-  // cria copia
-  SistLinear_t *SL_copia;
-  SL_copia = alocaSisLin(SL->n, pontVet);
-  copiaSisLin(SL, SL_copia);
-
   printf("Matriz A:\n");
-  printaMatriz(SL->A, SL->n);
+  prnMatriz(SL->A, N);
 
-  double tempo = timestamp();
   real_t **I;
   I = alocaMatriz(N);
   double tTotalY, tTotalX;
   int erro;
+
+  //Calcula a primeira inversa e arruma a ordem das linhas para ficar colunar para o calculo do resíduo.
+  double tIter = timestamp();
   erro = calculaInversa(L, U, I, LUT, N, &tTotalY, &tTotalX);
-  tempo += timestamp() - tempo;
+  tIter += timestamp() - tIter;
+  real_t **Inversa;
+  Inversa = alocaMatriz(N);
+  ordenaMatriz(I, Inversa, LUT, N);
+  printf("Inversa\n");
+  prnMatriz(Inversa, N);
 
-  fprintf(fp_out, "# iter 1: %.15g\n", tempo);
+  //Aloca vetor de norma
+  real_t *norma;
+  norma = alocaVetorZerado(norma, N);
+  //Aloca matriz de resíduo
+  real_t **R;                       //Matriz Resíduo R
+  R = alocaMatriz(N);
+
+  double tTempoResiduo = 0.0;
+  for (int i = 0; i < k; i++){
+
+    norma[i] = normaL2Residuo(SL, Inversa, R, N, &tIter);
+    tTempoResiduo += tIter;
+    fprintf(fp_out, "# iter %d: %.15g\n", i+1, norma[i]);
+  }
+  tTempoResiduo /= k;
+
+  //prnVetor(norma, k);
+
   fprintf(fp_out, "# Tempo LU: %.15g\n", tFatoracaoLU);
-  fprintf(fp_out, "# Tempo iter: %.15g\n", tempo);
-  fprintf(fp_out, "Tempo residuo: Não implementado\n");
-  fprintf(fp_out, "n\n");
-  prnMatriz(fp_out, I, SL->n);
+  fprintf(fp_out, "# Tempo iter: %.15g\n", tIter);
+  fprintf(fp_out, "Tempo residuo: %.15g\n", tTempoResiduo);
+  fprintf(fp_out, "%d\n", N);
+  printaArquivoMatrizTransposta(fp_out, Inversa, N);
 
-  free(L);
-  free(U);
+  liberaMatriz(I, N);
+  liberaMatriz(Inversa, N);
+  liberaMatriz(R, N);
+  liberaMatriz(L, N);
+  liberaMatriz(U, N);
+  free(norma);
   free(LUT);
 }

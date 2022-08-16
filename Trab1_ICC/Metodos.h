@@ -6,6 +6,8 @@
 #define ERRO 1.0e-6   // Tolerância para critérios de parada em métodos iterativos
 
 //----------------------------------------FUNCOES AUX----------------------------------------// 
+real_t normaL2Residuo(SistLinear_t *SL, real_t **I, real_t **R, int n, double *tTempoResiduo);
+void MultiplicaMQs(real_t** mA, real_t** mB, real_t** mR, int n);
 int encontraMaxColunaPivo(double** M, int pivNum, int n);
 void criaMatrizIdentidade(real_t **M, int n);
 real_t calculaDeterminante(real_t **M, int n);

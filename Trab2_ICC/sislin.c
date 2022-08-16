@@ -6,70 +6,34 @@
 #include "sislin.h"
 
 // alocaçao de matriz em memória 
-SistLinear_t* alocaSisLin(unsigned int n, tipoAloc_t tipo) {
+SistLinear_t* alocaSisLin(unsigned int n) {
   SistLinear_t *SL = (SistLinear_t *) malloc(sizeof(SistLinear_t));
   
   if (SL) {    
     SL->n = n;
-    SL->tipoAloc_A = tipo;
-    SL->A = (real_t **) malloc(n * sizeof(real_t *));
-
-    // alteração na alocação de B para armazenar a matriz identidade
-    SL->b = (real_t **) malloc(n * sizeof(real_t *));
-    for (int i = 0; i < n; i++)
-      SL->b[i] = (real_t *) malloc(n * sizeof(real_t));
+    SL->A = (real_t *) malloc(n * n * sizeof(real_t *));
+    SL->b = (real_t *) malloc(n * n * sizeof(real_t *));
 
     if (!(SL->A) || !(SL->b)) {
       liberaSisLin(SL);
       return NULL;
     }
-
-    // Matriz como vetor de N ponteiros para um único vetor com N*N elementos
-    if (tipo == pontVet) {
-      SL->A[0] = (real_t *) malloc(n * n * sizeof(real_t));
-      if (!(SL->A[0])) {
-        liberaSisLin(SL);
-        return NULL;
-      }	
-      for (int i = 1; i < n; ++i)
-        SL->A[i] = SL->A[i-1]+n;
-    }
-    else if (tipo == pontPont) {  // Matriz  como  vetor de  N  ponteiros
-				                          // para N vetores de N elementos cada
-      for (int i = 0; i < n; ++i)
-        SL->A[i] = (real_t *) malloc(n * sizeof(real_t));
-    }
-  }
+  }  
   return (SL);
 }
 
 // Liberacao de memória
 void liberaSisLin(SistLinear_t *SL) {
   if (SL) {
-    if (SL->A) {
-      if (SL->tipoAloc_A == pontVet) {
-        if (SL->A[0]) free (SL->A[0]);
-      }
-      else if (SL->tipoAloc_A == pontPont) {
-        for (int i = 0; i < SL->n; ++i) free (SL->A[i]);
-      }      
+    if (SL->A) {    
       free(SL->A);
     }
-    
     // pequena alteração, pois b agora armazena a matriz identidade
     if (SL->b[0]) {
-      free(SL->b[0]);
-      for (int i = 0; i < SL->n; ++i) free (SL->A[i]);
+      free(SL->b);
     }
     free(SL);
   }
-}
-
-void liberaMatriz(real_t **m, unsigned int n){
-  for (unsigned int i = 0; i < n; ++i){
-    free(m[i]);
-  }
-  free(m);
 }
 
 /*!
@@ -84,16 +48,11 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
   unsigned int n = SL->n;
   // para gerar valores no intervalo [0,coef_max]
   real_t invRandMax = ((real_t)coef_max / (real_t)RAND_MAX);
-
-  // inicializa vetor b
-  //for (unsigned int i = 0; i < n; ++i) {
-    //SL->b[i] = (real_t)rand() * invRandMax;
-  //}
     
   if (tipo == hilbert) {
     for (unsigned int i = 0; i < n; ++i) {
       for (unsigned int j = 0; j < n; ++j)  {
-        SL->A[i][j] = 1.0 / (real_t)(i + j + 1);
+        SL->A[i*n+j] = 1.0 / (real_t)(i + j + 1);
       }
     }
   }
@@ -101,14 +60,14 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
     // inicializa a matriz A
     for (unsigned int i=0; i<n; ++i) {
       for (unsigned int j=0; j<n; ++j)  {
-        SL->A[i][j] = (real_t)rand() * invRandMax;
+        SL->A[i*n+j] = (real_t)rand() * invRandMax;
       }
     }
     if (tipo == eqNula) {
       // sorteia eq a ser "nula"
       unsigned int nula = rand() % n;
       for (unsigned int j=0; j<n; ++j) {
-        SL->A[nula][j] = 0.0;
+        SL->A[nula*n+j] = 0.0;
       }
     } 
     else if (tipo == eqProporcional) {
@@ -117,7 +76,7 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
       unsigned int propSrc = (propDst + 1) % n;
       real_t mult = (real_t)rand() * invRandMax;
       for (unsigned int j=0; j<n; ++j) {
-        SL->A[propDst][j] = SL->A[propSrc][j] * mult;
+        SL->A[propDst*n+j] = SL->A[propSrc*n+j] * mult;
       }
     } 
     else if (tipo == eqCombLinear) {
@@ -126,48 +85,48 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
       unsigned int combSrc1 = (combDst + 1) % n;
       unsigned int combSrc2 = (combDst + 2) % n;
       for (unsigned int j=0; j<n; ++j) {
-        SL->A[combDst][j] = SL->A[combSrc1][j] + SL->A[combSrc2][j];
+        SL->A[combDst*n+j] = SL->A[combSrc1*n+j] + SL->A[combSrc2*n+j];
       }
     }
     else if (tipo == diagDominante) {
       // aumenta o valor dos termos da diagonal principal
       for (unsigned int i=0; i<n; ++i) {
         real_t soma = 0.0;
-        for (unsigned int j=0; j < i; ++j) soma += SL->A[i][j];
-        for (unsigned int j=i+1; j < n; ++j) soma += SL->A[i][j];
-        SL->A[i][i] += soma;
+        for (unsigned int j=0; j < i; ++j) soma += SL->A[i*n+j];
+        for (unsigned int j=i+1; j < n; ++j) soma += SL->A[i*n+j];
+        SL->A[i*n+i] += soma;
       }
     }
   }
 }
 
-SistLinear_t *lerSisLinArq(FILE *arqin, tipoAloc_t tipo) {
+SistLinear_t *lerSisLinArq(FILE *arqin) {
   unsigned int n;
   SistLinear_t *SL;
   fscanf(arqin, "%d",&n);
 
-  SL = alocaSisLin(n, tipo);
+  SL = alocaSisLin(n);
 
   for (int i = 0; i < n; ++i)
     for (int j = 0; j < n; ++j) 
-      fscanf(arqin, "%lf", &SL->A[i][j]);
+      fscanf(arqin, "%lf", &SL->A[i*n+j]);
   
   return SL;
 }
 
 void prnSisLin(SistLinear_t *SL) {
-  int n=SL->n;
+  int n = SL->n;
 
   for(int i = 0; i < n; ++i) {
     printf("\n  ");
     for(int j = 0; j < n; ++j)
-      printf("%.15g ", SL->A[i][j]);
+      printf("%.15g ", SL->A[i*n+j]);
   }
   printf("\n\n");
   for (int i = 0; i < n; ++i) {
     printf("\n  ");
     for (int j = 0; j < n; ++j)
-      printf("%.15g ", SL->b[i][j]);
+      printf("%.15g ", SL->b[i*n+j]);
   }
   printf("\n\n");
 }
@@ -190,34 +149,33 @@ void prnVetor(real_t *v, unsigned int n) {
   printf ("\n\n");
 }
 
-void prnMatriz(real_t **m, unsigned int n) {
+void prnMatriz(real_t *m, unsigned int n) {
   int i, j;
 
   for (i = 0; i < n; ++i) {
     for (j = 0; j < n; j++)
-      printf ("%.15g ", m[i][j]);
+      printf ("%.15g \t", m[i*n+j]);
     printf ("\n");
   }
   printf ("\n\n");
 }
 
-void printaArquivoMatrizTransposta(FILE *fp_out, real_t **m, unsigned int n) {
+void printaArquivoMatrizTransposta(FILE *fp_out, real_t *m, unsigned int n) {
   int i, j;
 
   for (i = 0; i < n; ++i) {
     for (j = 0; j < n; j++)
-      fprintf (fp_out, "%.15g ", m[j][i]);
+      fprintf (fp_out, "%.15g ", m[j*n+i]);
     fprintf (fp_out, "\n");
   }
   fprintf (fp_out, "\n\n");
 }
 
-//LINEAR OU COLUNAR??
-void ordenaMatriz(real_t **m, real_t **mT, int *LUT, unsigned int n) {
+void ordenaMatriz(real_t *m, real_t *mT, int *LUT, unsigned int n) {
   int i, j;
   for (i = 0; i < n; i ++){
     for (j = 0; j < n; j++)
-      mT[LUT[i]][j] = m[i][j];
+      mT[LUT[i]*n+j] = m[i*n+j];
   }
 }
 
@@ -229,11 +187,11 @@ real_t *alocaVetorZerado(real_t *x, int n) {
   return x;
 }
 
-int copia_matriz(real_t **x, real_t **y, int n) {
+int copia_matriz(real_t *x, real_t *y, int n) {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) 
-      y[i][j] = x[i][j];
+      y[i*n+j] = x[i*n+j];
   }
   return 0;
 }
@@ -259,13 +217,13 @@ int parseArguments(int argc, char** argv, FILE** fp_in, FILE** fp_out, int *N, i
   if (argc >= 3 || argc <= 9) {
     for (int i = 1; i < argc; i = i + 2) {
 
-      if (strcmp(argv[i],"-e") == 0)
+      if (strcmp(argv[i],"-e") == 0){
         (*fp_in) = fopen(argv[i + 1], "r+");
-      else if (strcmp(argv[i],"-s") == 0)
+      }else if (strcmp(argv[i],"-s") == 0){
         (*fp_out) = fopen(argv[i + 1], "w+");
-      else if (strcmp(argv[i],"-r") == 0)
+      }else if (strcmp(argv[i],"-r") == 0){
         (*N) = atoi(argv[i + 1]);  
-      else if (strcmp(argv[i],"-i") == 0) {
+      }else if (strcmp(argv[i],"-i") == 0){
         (*k) = atoi(argv[i + 1]);
         //validação da condição: k > 0
         if ((*k) <= 0){
@@ -283,18 +241,15 @@ int parseArguments(int argc, char** argv, FILE** fp_in, FILE** fp_out, int *N, i
   return -1;
 }
 
-real_t** alocaMatriz(int N) {
+real_t* alocaMatriz(int N) {
 
-  real_t **matriz;
+  real_t *matriz;
 
-  matriz = (real_t**) malloc(N * sizeof(real_t*));
+  matriz = (real_t*) malloc(N * N * sizeof(real_t));
   if (!matriz) {
     fprintf(stderr,"Não foi possível alocar a matriz.\n");
     exit(-1);
   }
-  for (int i = 0; i < N; i++)
-    matriz[i] = (real_t*) malloc(N * sizeof(real_t));
-
   return (matriz);
 }
 

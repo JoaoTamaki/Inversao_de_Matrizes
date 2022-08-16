@@ -13,14 +13,16 @@
   \param SL Ponteiro para o sistema linear
   \param x Solução do sistema linear
 */
-real_t normaL2Residuo(SistLinear_t *SL, real_t **I, real_t **R, int n, double *tTempoResiduo)
+real_t normaL2Residuo(SistLinear_t *SL, real_t *I, real_t *R, int n, double *tTempoResiduo)
 {
   *tTempoResiduo = timestamp();
   //Realiza Resíduo = B - A * I -> B(Identidade), A(Matriz de entrada), I(Matriz Inversa)
   MultiplicaMQs(SL->A, I, R, n);
+  int mult;
   for (int i = 0; i < n; i++){
+    mult = i*n;               //em vez de executar i*j vezes, faz apenas i vezes
     for (int j = 0; j < n; j++){
-      R[i][j] = SL->b[i][j] - R[i][j]; 
+      R[mult+j] = SL->b[mult+j] - R[mult+j]; 
     }
   }
   //printaMatriz(R, n);
@@ -28,9 +30,9 @@ real_t normaL2Residuo(SistLinear_t *SL, real_t **I, real_t **R, int n, double *t
   //Calcula norma do resíduo
   real_t sum = 0;
   for (int i = 0; i < n; i++){
+    mult = i*n;               //em vez de executar i*j vezes, faz apenas i vezes
     for (int j = 0; j < n; j++){
-
-      sum += R[i][j]*R[i][j];
+      sum += R[mult+j]*R[mult+j];
     }
   }
   *tTempoResiduo += timestamp() - *tTempoResiduo;
@@ -45,13 +47,15 @@ real_t normaL2Residuo(SistLinear_t *SL, real_t **I, real_t **R, int n, double *t
   \param n  ordem das matrizes quadradas
   \return 
 */
-void MultiplicaMQs(real_t** mA, real_t** mB, real_t** mR, int n) {
+void MultiplicaMQs(real_t* mA, real_t* mB, real_t* mR, int n) {
 
+  int mult;
   for (int i = 0; i < n; i ++) {
     for (int j = 0; j < n; j++) {
-      mR[i][j] = 0.0;
+      mR[i*n+j] = 0.0;
+      mult = i*n;               //em vez de executar i*j vezes, faz apenas i vezes
       for (int i = 0; i < n; i++)
-        mR[i][j] += mA[i][i] * mB[i][j];
+        mR[i*n+j] += mA[i*n+i] * mB[i*n+j];
     }
   }
   return;  
@@ -64,14 +68,16 @@ void MultiplicaMQs(real_t** mA, real_t** mB, real_t** mR, int n) {
   \param n tamanho da matriz
   \return índice da linha correspondente ao pivô (que tem o maior valor da coluna.
   */
-int encontraMaxColunaPivo(double** M, int pivNum, int n) {
+int encontraMaxColunaPivo(double* M, int pivNum, int n) {
 
   int maxIndx = pivNum;
-  double max = fabs(M[pivNum][pivNum]);
+  double max = fabs(M[pivNum*n+pivNum]);
+  int indice;                 //em vez de executar 2*i vezes, faz apenas i vezes caso entre no (IF)
 
   for (int i = pivNum + 1; i < n; i++) {
-    if (fabs(M[i][pivNum]) > max) {
-      max = fabs(M[i][pivNum]);
+    indice = i*n+pivNum;
+    if (fabs(M[indice]) > max) {
+      max = fabs(M[indice]);
       maxIndx = i;
     }
   }
@@ -84,17 +90,16 @@ int encontraMaxColunaPivo(double** M, int pivNum, int n) {
   \param n tamanho da matriz
   \return B inicializado com a matriz identidade.
   */
-void criaMatrizIdentidade(real_t **M, int n) {
+void criaMatrizIdentidade(real_t *M, int n) {
 
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       if(i == j)
-        M[i][j] = 1.0;
+        M[i*n+j] = 1.0;
       else 
-        M[i][j] = 0.0;
+        M[i*n+j] = 0.0;
     }
   }
-
   return;
 }
 
@@ -104,12 +109,12 @@ void criaMatrizIdentidade(real_t **M, int n) {
   \param n tamanho da matriz
   \return o valor do determinante
 */
-real_t calculaDeterminante(real_t **M, int n) {
+real_t calculaDeterminante(real_t *M, int n) {
 
   real_t determinante = 1.0;
 
   for (int i = 0;  i < n; ++i) 
-    determinante = determinante * M[i][i];
+    determinante = determinante * M[i*n+i];
   return determinante;
 }
 
@@ -124,34 +129,34 @@ real_t calculaDeterminante(real_t **M, int n) {
   \param tTotal tempo total em milisegundos gastos pelo método
   \return código de erro. 0 em caso de sucesso.
 */
-int FatoracaoLU_PivoParcial(double** L, double** U, int n, int* P, double *tTotal) {
+int FatoracaoLU_PivoParcial(double* L, double* U, int n, int* P, double *tTotal) {
 
   *tTotal = timestamp();
 
   // ESCALONAMENTO: PIVOTEAMENTO PARCIAL DA MATRIZ A COPIADA EM U, 
   // COM TRIANGULAÇÃO RESULTANDO EM MATRIZ SUPERIOR
-  for (int piv = 0; piv < n; piv++) {               // para cada equação (linha) da matriz A 
-    int newPiv = encontraMaxColunaPivo(U, piv, n);  // encontra o maior valor da coluna correspondente
+  for (int piv = 0; piv < n; piv++) {                 // para cada equação (linha) da matriz A 
+    int newPiv = encontraMaxColunaPivo(U, piv, n);    // encontra o maior valor da coluna correspondente
     
-    if (piv != newPiv) {                            // se o índice da linha pivô for diferente do índice da equação atual
-      trocaLinhasMQ(U, n, piv, newPiv);             // troca linha de U atual pela linha pivô
-      trocaLinhasMQ(L, n, piv, newPiv);             // troca linha de L atual pela linha pivô
-      TrocaElementosVetor(P, piv, newPiv);          // armazena a troca na LUT
+    if (piv != newPiv) {                              // se o índice da linha pivô for diferente do índice da equação atual
+      trocaLinhasMQ(U, n, piv, newPiv);               // troca linha de U atual pela linha pivô
+      trocaLinhasMQ(L, n, piv, newPiv);               // troca linha de L atual pela linha pivô
+      TrocaElementosVetor(P, piv, newPiv);            // armazena a troca na LUT
     }  
-    L[piv][piv] = 1.0;                              // insere 1 na linha atual, na posição da diagonal principal de L
-    double mPiv = U[piv][piv];
+    L[piv*n+piv] = 1.0;                               // insere 1 na linha atual, na posição da diagonal principal de L
+    double mPiv = U[piv*n+piv];
 
-    for (int i = piv + 1; i < n; i++) {             // para cada coluna/ componente subsequente
-      float mi = U[i][piv];
-      U[i][piv] = 0.0;                              // vai zerando a parte superior da matriz U
-      L[i][piv] = (mi/mPiv);                        // calcula o valor do multiplicador m
-      if (isfinite(L[i][piv]) == 0) {
+    for (int i = piv + 1; i < n; i++) {               // para cada coluna/ componente subsequente
+      float mi = U[i*n+piv];
+      U[i*n+piv] = 0.0;                               // vai zerando a parte superior da matriz U
+      L[i*n+piv] = (mi/mPiv);                         // calcula o valor do multiplicador m
+      if (isfinite(L[i*n+piv]) == 0) {
         fprintf(stderr, "O cálculo de um multiplicador de L na fatoração LU deu infinity ou NaN.\n");
         exit(-1);
       }
-      for (int j = piv + 1; j < n; j++) {           // para o próximo elemento da linha da matriz U em diante
-        U[i][j] -= L[i][piv] * U[piv][j];           // calcula o valor do novo coeficiente de U
-        if (isfinite(U[i][j]) == 0) {
+      for (int j = piv + 1; j < n; j++) {             // para o próximo elemento da linha da matriz U em diante
+        U[i*n+j] -= L[i*n+piv] * U[piv*n+j];          // calcula o valor do novo coeficiente de U
+        if (isfinite(U[i*n+j]) == 0) {
           fprintf(stderr, "O cálculo de um coeficiente de U na fatoração LU deu underflow ou overflow.\n");
           exit(-2);
         }
@@ -170,11 +175,18 @@ void TrocaElementosVetor(int *vet, int i1, int i2){
   return;
 }
 
-void trocaLinhasMQ(double **M, int n, int l1, int l2){
-  double* aux;
-  aux = M[l1];
-  M[l1] = M[l2];
-  M[l2] = aux;
+void trocaLinhasMQ(double *M, int n, int l1, int l2){
+  double aux;
+  int mult1, mult2;
+  for (int j = 0; j < n; j++){
+    //em vez de 2*n operações, realiza n vezes
+    mult1 = l1*n+j;
+    mult2 = l2*n+j;
+
+    aux = M[mult1];
+    M[mult1] = M[mult2];
+    M[mult2] = aux;
+  }
   return;
 }
 
@@ -186,11 +198,12 @@ void trocaLinhasMQ(double **M, int n, int l1, int l2){
   \param k índice da Look up table.
   \param y vetor y a ser calculado, que é usado para calcula Ux = y.
 */
-void CalculaYFROML(real_t **L, int n, int *LUT, int k, real_t* y, real_t *b) {
-  for (int i = 0; i < n; i++) {     //percorre diagonal principal de cima pra baixo
-    y[i] = b[i];                    //inicia o y com o b da linha
-    for (int j = 0; j < i; j++)     //j inicia no inicio e percorre antes da diagonal principal
-      y[i] -= L[i][j] * y[j];       //realiza subtrações de Lx de cada posição após a diagonal principal y = b[i] - L[i][i+1]*y[i] - ... - L[i][n]*y[i]
+void CalculaYFROML(real_t *L, int n, int *LUT, int k, real_t* y, real_t *b) {
+  for (int i = 0; i < n; i++) {           //percorre diagonal principal de cima pra baixo
+    y[i] = b[i];                          //inicia o y com o b da linha
+    int mult = i*n;                       //em vez de executar i*j vezes, faz apenas i vezes
+    for (int j = 0; j < i; j++)           //j inicia no inicio e percorre antes da diagonal principal
+      y[i] -= L[mult+j] * y[j];           //realiza subtrações de Lx de cada posição após a diagonal principal y = b[i] - L[i][i+1]*y[i] - ... - L[i][n]*y[i]
   }
   return;
 }
@@ -202,12 +215,13 @@ void CalculaYFROML(real_t **L, int n, int *LUT, int k, real_t* y, real_t *b) {
   \param n ordem das matrizes quadradas.
   \param x vetor x a ser calculado, que é uma linha da matriz identidade.
 */
-void CalculaXFROMUY(real_t **U, real_t* y, int n, real_t *x){
-  for (int i = n-1; i >= 0; i--) {    //percorre diagonal principal de baixo pra cima
-    x[i] = y[i];                      //inicia o x com o y da linha
-    for (int j = i+1; j < n; j++)     //j inicia após a diagonal principal 
-      x[i] -= U[i][j] * x[j];         //realiza subtrações de Uy de cada posição após a diagonal principal x = y[i] - U[i][i+1]*x[i] - ... - U[i][n]*x[i]
-    x[i] /= U[i][i];                  //divide pelo elemento da diagonal principal de U[i][i]
+void CalculaXFROMUY(real_t *U, real_t* y, int n, real_t *x){
+  for (int i = n-1; i >= 0; i--) {        //percorre diagonal principal de baixo pra cima
+    x[i] = y[i];                          //inicia o x com o y da linha
+    int mult = i*n;                       //em vez de executar i*(n-j+1)+1 vezes, faz apenas i+1 vezes
+    for (int j = i+1; j < n; j++)         //j inicia após a diagonal principal 
+      x[i] -= U[mult+j] * x[j];           //realiza subtrações de Uy de cada posição após a diagonal principal x = y[i] - U[i][i+1]*x[i] - ... - U[i][n]*x[i]
+    x[i] /= U[mult+i];                    //divide pelo elemento da diagonal principal de U[i][i]
   }
   return;
 }
@@ -223,7 +237,7 @@ void CalculaXFROMUY(real_t **U, real_t* y, int n, real_t *x){
   \param tTotalY médio para cáculo de y.
   \param tTotalX médio para cáculo de x.
 */
-int calculaInversa(real_t **L, real_t **U, real_t **I, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
+int calculaInversa(real_t *L, real_t *U, real_t *I, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
 
   double tempo;
   int erro;
@@ -249,12 +263,13 @@ int calculaInversa(real_t **L, real_t **U, real_t **I, int *LUT, unsigned int n,
     *tTotalX += timestamp() - tempo;
 
     for(int j = 0; j < n; j++) {
-      I[LUT[i]][j] = x[j];
+      I[LUT[i]*n+j] = x[j];
     }
   }
 
   free(y);
   free(x);
+  free(b);
 
   *tTotalY /= n;
   *tTotalX /= n;
