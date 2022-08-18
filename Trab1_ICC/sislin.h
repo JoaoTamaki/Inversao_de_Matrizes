@@ -29,25 +29,25 @@ typedef enum {
 } tipoSistLinear_t;
 
 
-// Inicialização, alocaçao e desalocação de matrizes
+// Alocaçao e desalocação de estruturas
 SistLinear_t* alocaSisLin (unsigned int n, tipoAloc_t tipo);
 real_t *alocaVetor(int n);
 real_t** alocaMatriz(int N);
 int* alocaeInicilizaVetor(int N);
 void liberaSisLin (SistLinear_t *SL);
 void liberaMatriz(real_t **m, unsigned int n);
-void iniSisLin (SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max);
 
-// Leitura e impressão de sistemas lineares
+// Leitura e impressão de estruturas
+void iniSisLin (SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max);
 SistLinear_t *lerSisLinArq (FILE *arqin, tipoAloc_t tipo);
 void prnSisLin (SistLinear_t *SL);
 void prnVetorInt (int *v, unsigned int n);
 void prnMatriz(real_t **m, unsigned int n);
 void printaArquivoMatrizTransposta(FILE *fp_out, real_t **m, unsigned int n);
 void printaMatriz(real_t **m, unsigned int n);
-void ordenaMatriz(real_t **m, real_t **mT, int *LUT, unsigned int n);
 
 // Outras funções úteis
+void ordenaMatriz(real_t **m, real_t **mT, int *LUT, unsigned int n);
 int copia_matriz(real_t **x, real_t **y, int n);
 int copia_vetor(real_t *x, real_t *y, int n);
 int copiaSisLin(SistLinear_t *SL, SistLinear_t *SL_copia);

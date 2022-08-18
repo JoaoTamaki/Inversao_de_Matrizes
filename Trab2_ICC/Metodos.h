@@ -20,7 +20,7 @@ void TrocaElementosVetor(int *vet, int i1, int i2);
 void trocaLinhasMQ(double *M, int n, int l1, int l2);
 void CalculaYFROML(real_t *L, int n, int *LUT, int k, real_t* y, real_t* b);
 void CalculaXFROMUY(real_t *U, real_t* y, int n, real_t *x);
-int calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *LUT, unsigned int n, double *tTotalY, double *tTotalX);
-int calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n);
+void calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *LUT, unsigned int n);
+void calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n);
 
 #endif // __METODOS_H__

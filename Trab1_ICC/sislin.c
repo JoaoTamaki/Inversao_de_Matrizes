@@ -5,7 +5,7 @@
 #include "utils.h"
 #include "sislin.h"
 
-// alocaçao de matriz em memória 
+// Alocaçao e desalocação de estruturas
 SistLinear_t* alocaSisLin(unsigned int n, tipoAloc_t tipo) {
   SistLinear_t *SL = (SistLinear_t *) malloc(sizeof(SistLinear_t));
   
@@ -79,7 +79,6 @@ int* alocaeInicilizaVetor(int N) {
 
 }
 
-// Liberacao de memória
 void liberaSisLin(SistLinear_t *SL) {
   if (SL) {
     if (SL->A) {
@@ -107,7 +106,8 @@ void liberaMatriz(real_t **m, unsigned int n){
   free(m);
 }
 
-//Inicialização de matriz
+
+// Leitura e impressão de estruturas
 /*!
   \brief Cria coeficientes e termos independentes do SL. FOI COMENTADO O B, JÁ QUE NO TRABALHO SERÁ A MATRIZ IDENTIDADE
   *
@@ -177,7 +177,6 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
   }
 }
 
-//Leitura de arquivo
 SistLinear_t *lerSisLinArq(FILE *arqin, tipoAloc_t tipo) {
   unsigned int n;
   SistLinear_t *SL;
@@ -192,7 +191,6 @@ SistLinear_t *lerSisLinArq(FILE *arqin, tipoAloc_t tipo) {
   return SL;
 }
 
-//Impressão de estruturas
 void prnSisLin(SistLinear_t *SL) {
   int n=SL->n;
 
@@ -251,6 +249,7 @@ void printaArquivoMatrizTransposta(FILE *fp_out, real_t **m, unsigned int n) {
 }
 
 //Outras funções úteis
+
 void ordenaMatriz(real_t **m, real_t **mT, int *LUT, unsigned int n) {
   int i, j;
   for (i = 0; i < n; i ++){

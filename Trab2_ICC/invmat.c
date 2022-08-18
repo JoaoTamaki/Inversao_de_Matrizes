@@ -92,14 +92,12 @@ int main (int argc, char** argv) {
     exit(-3);
   }
 
-  printf("Matriz A:\n");
-  prnMatriz(SL->A, N);
+  //printf("Matriz A:\n");
+  //prnMatriz(SL->A, N);
 
   //Inicializa variaveis para calculo da inversa e refinamento
-  double tTotalY, tTotalX;                      //Tempo no calculo de x e y
-  double op1, op2;                              //Tempo no calculo de x e y
+  double op1, op2;                              //Tempo de cada iteração do calculo da iteração (Op1) e do resíduo (Op2)
   double tTempoResiduo = 0.0, tTempoIter = 0.0; //Tempo total do calculo da iteração (Op1) e do resíduo (Op2)
-  int erro;                                     //Verificador do return das funções
   real_t *I = alocaMatriz(N);                   //Matriz inversa conectada a LUT
   real_t *Inversa = alocaMatriz(N);             //Matriz inversa ordenada para o refinamento
   real_t *x = alocaVetor(N);                    //Vetor X para o calculo do X
@@ -110,19 +108,13 @@ int main (int argc, char** argv) {
   real_t *vet = alocaVetor(N);                  //Vetor Auxiliar para o calculo de w
 
   //Calcula a primeira inversa que está linear em vez de colunar
-  double tIter = timestamp();
-  erro = calculaInversa(L, U, I, x, y, LUT, N, &tTotalY, &tTotalX);                             //OP 1
-  tIter += timestamp() - tIter;
-
+  calculaInversa(L, U, I, x, y, LUT, N);
   //Ordena matriz inversa para ser usada sem LUT para o refinamento
   ordenaMatriz(I, Inversa, LUT, N);
 
-  printf("Primeira Inversa:\n");
-  prnMatriz(Inversa, N);
-
   //Realiza Refinamento k iterações
   for (int i = 0; i < k; i++){
-    norma[i] = refinamento(SL, L, U, Inversa, R, W, vet, x, y, LUT, &op1, &op2);               //OP 2
+    norma[i] = refinamento(SL, L, U, Inversa, R, W, vet, x, y, LUT, &op1, &op2);
     tTempoIter += op1;
     tTempoResiduo += op2;
     fprintf(fp_out, "# iter %d: %.15g\n", i+1, norma[i]);
@@ -131,8 +123,8 @@ int main (int argc, char** argv) {
   tTempoResiduo /= k;
 
   fprintf(fp_out, "# Tempo LU: %.15g\n", tFatoracaoLU);
-  fprintf(fp_out, "# Tempo iter: %.15g\n", tIter);
-  fprintf(fp_out, "Tempo residuo: %.15g\n", tTempoResiduo);
+  fprintf(fp_out, "# Tempo iter: %.15g\n", tTempoIter);
+  fprintf(fp_out, "# Tempo residuo: %.15g\n", tTempoResiduo);
   fprintf(fp_out, "%d\n", N);
   printaArquivoMatrizTransposta(fp_out, Inversa, N);
 

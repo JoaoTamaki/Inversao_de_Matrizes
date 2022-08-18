@@ -40,27 +40,18 @@ real_t refinamento(SistLinear_t *SL, real_t *L, real_t *U, real_t *I, real_t *R,
   //Inicializa variáveis
   unsigned int n = SL->n;
   real_t normaResiduo;
-
   *tTempoIter = timestamp();  
   //Realiza Resíduo = B - A * I -> B(Identidade), A(Matriz de entrada), I(Matriz Inversa)
   calculaMatrizResiduo(SL->A, SL->b, I, R, n);
   calculaW(L, U, R, W, vet, x, y, LUT, n);
   calculaNovoI(I, W, n);
-  *tTempoIter += timestamp() - *tTempoIter;
+  *tTempoIter = timestamp() - *tTempoIter;
 
   //Calcula norma do resíduo
   *tTempoResiduo = timestamp();
   normaResiduo = normaL2Residuo(R, n);
-  *tTempoResiduo += timestamp() - *tTempoResiduo;
+  *tTempoResiduo = timestamp() - *tTempoResiduo;
 
-/*
-  printf("R:\n");
-  prnMatriz(R, n);
-  printf("W:\n");
-  prnMatriz(W, n);
-  printf("Novo I:\n");
-  prnMatriz(I, n);
-*/
   return normaResiduo;
 }
 
@@ -259,13 +250,8 @@ void CalculaXFROMUY(real_t *U, real_t* y, int n, real_t *x){
   \param LUT Look up table que armazena as trocas de linha em b.
   \param n tamanho n do sistema linear.
   \param t vetor y a ser calculado, que é usado para calcula Ux = y.
-  \param tTotalY médio para cáculo de y.
-  \param tTotalX médio para cáculo de x.
 */
-int calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
-
-  double tempo;
-  int erro;
+void calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *LUT, unsigned int n) {
 
   real_t *b = (real_t*)malloc(n * sizeof(real_t));
 
@@ -277,13 +263,8 @@ int calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *L
     }
     b[LUT[i]] = 1.0;
 
-    tempo = timestamp();
     CalculaYFROML(L, n, LUT, i, y,b);
-    *tTotalY += timestamp() - tempo;
-
-    tempo = timestamp();
     CalculaXFROMUY(U, y, n, x);
-    *tTotalX += timestamp() - tempo;
 
     for(int j = 0; j < n; j++) {
       I[LUT[i]*n+j] = x[j];
@@ -291,13 +272,9 @@ int calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *L
   }
 
   free(b);
-
-  *tTotalY /= n;
-  *tTotalX /= n;
-  return 0;
 }
 
-int calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n) {
+void calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n) {
 
   int mult;
 
@@ -305,16 +282,16 @@ int calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x,
     
     mult = i*n;           //em vez de executar i*j vezes, faz apenas i vezes
     for (int j = 0; j < n; j++){
-      vet[LUT[j]] = R[i*mult+j];
+      vet[LUT[j]] = R[mult+j];
     }
 
     CalculaYFROML(L, n, LUT, i, y, vet);
     CalculaXFROMUY(U, y, n, x);
 
+    mult = LUT[i]*n;
     for(int j = 0; j < n; j++) {
-      W[LUT[i]*n+j] = x[j];
+      W[mult+j] = x[j];
     }
   }
 
-  return 0;
 }

@@ -5,7 +5,7 @@
 #include "utils.h"
 #include "sislin.h"
 
-// alocaçao de matriz em memória 
+// Alocaçao e desalocação de estruturas
 SistLinear_t* alocaSisLin(unsigned int n) {
   SistLinear_t *SL = (SistLinear_t *) malloc(sizeof(SistLinear_t));
   
@@ -22,7 +22,39 @@ SistLinear_t* alocaSisLin(unsigned int n) {
   return (SL);
 }
 
-// Liberacao de memória
+real_t *alocaVetor(int n) {
+
+  return (real_t *) malloc(n * sizeof(real_t));
+}
+
+real_t* alocaMatriz(int N) {
+
+  real_t *matriz;
+
+  matriz = (real_t*) malloc(N * N * sizeof(real_t));
+  if (!matriz) {
+    fprintf(stderr,"Não foi possível alocar a matriz.\n");
+    exit(-1);
+  }
+  return (matriz);
+}
+
+int* alocaeInicilizaVetor(int N) {
+
+  int *vetor;
+
+  vetor = (int*) malloc (N * sizeof(int));
+  if (!vetor) {
+    fprintf(stderr,"Não foi possível alocar o vetor.\n");
+    exit(-1);
+  }
+  for (int i = 0; i < N; i++)
+    vetor[i] = i;
+
+  return (vetor);
+
+}
+
 void liberaSisLin(SistLinear_t *SL) {
   if (SL) {
     if (SL->A) {    
@@ -100,6 +132,8 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
   }
 }
 
+//Leitura e escrita de estruturas
+
 SistLinear_t *lerSisLinArq(FILE *arqin) {
   unsigned int n;
   SistLinear_t *SL;
@@ -171,17 +205,14 @@ void printaArquivoMatrizTransposta(FILE *fp_out, real_t *m, unsigned int n) {
   fprintf (fp_out, "\n\n");
 }
 
+//Outras funções uteis
+
 void ordenaMatriz(real_t *m, real_t *mT, int *LUT, unsigned int n) {
   int i, j;
   for (i = 0; i < n; i ++){
     for (j = 0; j < n; j++)
       mT[LUT[i]*n+j] = m[i*n+j];
   }
-}
-
-real_t *alocaVetor(int n) {
-
-  return (real_t *) malloc(n * sizeof(real_t));
 }
 
 int copia_matriz(real_t *x, real_t *y, int n) {
@@ -236,32 +267,4 @@ int parseArguments(int argc, char** argv, FILE** fp_in, FILE** fp_out, int *N, i
   }
   fprintf(stderr,"Número inválido de argumentos. Confira as entradas possíveis no README.\n");
   return -1;
-}
-
-real_t* alocaMatriz(int N) {
-
-  real_t *matriz;
-
-  matriz = (real_t*) malloc(N * N * sizeof(real_t));
-  if (!matriz) {
-    fprintf(stderr,"Não foi possível alocar a matriz.\n");
-    exit(-1);
-  }
-  return (matriz);
-}
-
-int* alocaeInicilizaVetor(int N) {
-
-  int *vetor;
-
-  vetor = (int*) malloc (N * sizeof(int));
-  if (!vetor) {
-    fprintf(stderr,"Não foi possível alocar o vetor.\n");
-    exit(-1);
-  }
-  for (int i = 0; i < N; i++)
-    vetor[i] = i;
-
-  return (vetor);
-
 }
