@@ -7,45 +7,61 @@
 #include "sislin.h"
 #include "Metodos.h"
 
-//----------------------------------------FUNÇÕES AUX----------------------------------------// 
-/*!
-  \brief Essa função calcula a norma L2 do resíduo de um sistema linear 
-  \param SL Ponteiro para o sistema linear
-  \param x Solução do sistema linear
-*/
-real_t normaL2Residuo(SistLinear_t *SL, real_t *I, real_t *R, int n, double *tTempoResiduo)
-{
-  *tTempoResiduo = timestamp();
-  //Realiza Resíduo = B - A * I -> B(Identidade), A(Matriz de entrada), I(Matriz Inversa)
-  MultiplicaMQs(SL->A, I, R, n);
+//----------------------------------------FUNÇÕES AUX----------------------------------------//
+void calculaNovoI(real_t *I, real_t *W, unsigned int n){
   int mult;
   for (int i = 0; i < n; i++){
-    mult = i*n;               //em vez de executar i*j vezes, faz apenas i vezes
+    mult = i*n;
     for (int j = 0; j < n; j++){
-      R[mult+j] = SL->b[mult+j] - R[mult+j]; 
+      I[mult+j] += W[mult+j]; 
     }
   }
+}
 
-
-
-  //r precisa ser trocada as linhas 
-  //Fazer Ly = r para cada linha
-  //Fazer Uw = y para cada linha
-  //Construir matriz W
-
-
-  //printaMatriz(R, n);
-
-  //Calcula norma do resíduo
-  real_t sum = 0;
+real_t normaL2Residuo(real_t *R, unsigned int n){
+  int mult;
+  int sum;
   for (int i = 0; i < n; i++){
     mult = i*n;               //em vez de executar i*j vezes, faz apenas i vezes
     for (int j = 0; j < n; j++){
       sum += R[mult+j]*R[mult+j];
     }
   }
-  *tTempoResiduo += timestamp() - *tTempoResiduo;
   return sqrt(sum);
+}
+
+/*!
+  \brief Essa função calcula a norma L2 do resíduo de um sistema linear 
+  \param SL Ponteiro para o sistema linear
+  \param x Solução do sistema linear
+*/
+real_t refinamento(SistLinear_t *SL, real_t *L, real_t *U, real_t *I, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, double *tTempoIter, double *tTempoResiduo)
+{
+  //Inicializa variáveis
+  unsigned int n = SL->n;
+  real_t normaResiduo;
+
+  *tTempoIter = timestamp();  
+  //Realiza Resíduo = B - A * I -> B(Identidade), A(Matriz de entrada), I(Matriz Inversa)
+  calculaMatrizResiduo(SL->A, SL->b, I, R, n);
+  calculaW(L, U, R, W, vet, x, y, LUT, n);
+  calculaNovoI(I, W, n);
+  *tTempoIter += timestamp() - *tTempoIter;
+
+  //Calcula norma do resíduo
+  *tTempoResiduo = timestamp();
+  normaResiduo = normaL2Residuo(R, n);
+  *tTempoResiduo += timestamp() - *tTempoResiduo;
+
+/*
+  printf("R:\n");
+  prnMatriz(R, n);
+  printf("W:\n");
+  prnMatriz(W, n);
+  printf("Novo I:\n");
+  prnMatriz(I, n);
+*/
+  return normaResiduo;
 }
 
 /*!
@@ -56,16 +72,16 @@ real_t normaL2Residuo(SistLinear_t *SL, real_t *I, real_t *R, int n, double *tTe
   \param n  ordem das matrizes quadradas
   \return 
 */
-void MultiplicaMQs(real_t* mA, real_t* mB, real_t* mR, int n) {
+void calculaMatrizResiduo(real_t* mA, real_t* mB, real_t* mI, real_t* mR, int n) {
 
   int mult;
   for (int i = 0; i < n; i ++) {
+    mult = i*n;               //em vez de executar i*j vezes, faz apenas i vezes
     for (int j = 0; j < n; j++) {
-      mR[i*n+j] = 0.0;
-      mult = i*n;               //em vez de executar i*j vezes, faz apenas i vezes
-      for (int i = 0; i < n; i++)
-        mR[i*n+j] += mA[i*n+i] * mB[i*n+j];
+      for (int k = 0; k < n; k++)
+        mR[i*n+j] += mA[i*n+k] * mI[j*n+k];
     }
+    mR[mult+i] = mB[mult+i] - mR[mult+i]; 
   }
   return;  
 }
@@ -76,7 +92,7 @@ void MultiplicaMQs(real_t* mA, real_t* mB, real_t* mR, int n) {
   \param pivNum índice da linha em análise que pode ser trocada pela linha pivô
   \param n tamanho da matriz
   \return índice da linha correspondente ao pivô (que tem o maior valor da coluna.
-*/
+  */
 int encontraMaxColunaPivo(double* M, int pivNum, int n) {
 
   int maxIndx = pivNum;
@@ -98,7 +114,7 @@ int encontraMaxColunaPivo(double* M, int pivNum, int n) {
   \param M ponteiro para a matriz
   \param n tamanho da matriz
   \return B inicializado com a matriz identidade.
-*/
+  */
 void criaMatrizIdentidade(real_t *M, int n) {
 
   for (int i = 0; i < n; i++) {
@@ -246,13 +262,11 @@ void CalculaXFROMUY(real_t *U, real_t* y, int n, real_t *x){
   \param tTotalY médio para cáculo de y.
   \param tTotalX médio para cáculo de x.
 */
-/*int calculaW(real_t *L, real_t *U, real_t *I, real_t *R, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
+int calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
 
   double tempo;
   int erro;
 
-  real_t *y = (real_t*)malloc(n * sizeof(real_t));
-  real_t *x = (real_t*)malloc(n * sizeof(real_t));
   real_t *b = (real_t*)malloc(n * sizeof(real_t));
 
   for(int i = 0; i < n; i++) {
@@ -276,64 +290,31 @@ void CalculaXFROMUY(real_t *U, real_t* y, int n, real_t *x){
     }
   }
 
-  free(y);
-  free(x);
   free(b);
 
   *tTotalY /= n;
   *tTotalX /= n;
   return 0;
-}*/
+}
 
+int calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n) {
 
-
-
-/*!
-  \brief Calcula matriz inversa usando fatoração LU e eliminação de Gauss 
-  \param L matriz da fatoração LU. Matriz triangular inferior cuja diagonal principal consiste em somente 1's.
-  \param U matriz da fatoração LU. Matriz triangular superior.  
-  \param I matriz que armazenará a inversa de A.
-  \param LUT Look up table que armazena as trocas de linha em b.
-  \param n tamanho n do sistema linear.
-  \param t vetor y a ser calculado, que é usado para calcula Ux = y.
-  \param tTotalY médio para cáculo de y.
-  \param tTotalX médio para cáculo de x.
-*/
-int calculaInversa(real_t *L, real_t *U, real_t *I, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
-
-  double tempo;
-  int erro;
-
-  real_t *y = (real_t*)malloc(n * sizeof(real_t));
-  real_t *x = (real_t*)malloc(n * sizeof(real_t));
-  real_t *b = (real_t*)malloc(n * sizeof(real_t));
+  int mult;
 
   for(int i = 0; i < n; i++) {
-
-    //inicializa b
-    for(int j = 0; j < n; j++) {    
-      b[j] = 0.0;
+    
+    mult = i*n;           //em vez de executar i*j vezes, faz apenas i vezes
+    for (int j = 0; j < n; j++){
+      vet[LUT[j]] = R[i*mult+j];
     }
-    b[LUT[i]] = 1.0;
 
-    tempo = timestamp();
-    CalculaYFROML(L, n, LUT, i, y,b);
-    *tTotalY += timestamp() - tempo;
-
-    tempo = timestamp();
+    CalculaYFROML(L, n, LUT, i, y, vet);
     CalculaXFROMUY(U, y, n, x);
-    *tTotalX += timestamp() - tempo;
 
     for(int j = 0; j < n; j++) {
-      I[LUT[i]*n+j] = x[j];
+      W[LUT[i]*n+j] = x[j];
     }
   }
 
-  free(y);
-  free(x);
-  free(b);
-
-  *tTotalY /= n;
-  *tTotalX /= n;
   return 0;
 }

@@ -29,7 +29,7 @@ void liberaSisLin(SistLinear_t *SL) {
       free(SL->A);
     }
     // pequena alteração, pois b agora armazena a matriz identidade
-    if (SL->b[0]) {
+    if (SL->b) {
       free(SL->b);
     }
     free(SL);
@@ -179,12 +179,9 @@ void ordenaMatriz(real_t *m, real_t *mT, int *LUT, unsigned int n) {
   }
 }
 
-real_t *alocaVetorZerado(real_t *x, int n) {
+real_t *alocaVetor(int n) {
 
-  x = (real_t *) malloc(n * sizeof(real_t));
-  for (int i = 0; i < n; i++)
-    x[i] = 0.0;
-  return x;
+  return (real_t *) malloc(n * sizeof(real_t));
 }
 
 int copia_matriz(real_t *x, real_t *y, int n) {

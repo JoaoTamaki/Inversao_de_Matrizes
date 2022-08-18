@@ -13,28 +13,45 @@
   \param SL Ponteiro para o sistema linear
   \param x Solução do sistema linear
 */
-real_t normaL2Residuo(SistLinear_t *SL, real_t **I, real_t **R, int n, double *tTempoResiduo)
-{
-  *tTempoResiduo = timestamp();
-  //Realiza Resíduo = B - A * I -> B(Identidade), A(Matriz de entrada), I(Matriz Inversa)
-  MultiplicaMQs(SL->A, I, R, n);
+void calculaNovoI(real_t **I, real_t **W, unsigned int n){
+  
   for (int i = 0; i < n; i++){
     for (int j = 0; j < n; j++){
-      R[i][j] = SL->b[i][j] - R[i][j]; 
+      I[i][j] += W[i][j]; 
     }
   }
-  //printaMatriz(R, n);
+}
 
-  //Calcula norma do resíduo
-  real_t sum = 0;
+real_t normaL2Residuo(real_t **R, unsigned int n){
+  
+  int sum;
   for (int i = 0; i < n; i++){
     for (int j = 0; j < n; j++){
-
       sum += R[i][j]*R[i][j];
     }
   }
-  *tTempoResiduo += timestamp() - *tTempoResiduo;
   return sqrt(sum);
+}
+
+real_t refinamento(SistLinear_t *SL, real_t **L, real_t **U, real_t **I, real_t **R, real_t **W, real_t *vet, real_t *x, real_t *y, int *LUT, double *tTempoIter, double *tTempoResiduo){
+  
+  //Inicializa variáveis
+  unsigned int n = SL->n;
+  real_t normaResiduo;
+
+  *tTempoIter = timestamp();  
+  //Realiza Resíduo = B - A * I -> B(Identidade), A(Matriz de entrada), I(Matriz Inversa)
+  calculaMatrizResiduo(SL->A, SL->b, I, R, n);
+  calculaW(L, U, R, W, vet, x, y, LUT, n);
+  calculaNovoI(I, W, n);
+  *tTempoIter += timestamp() - *tTempoIter;
+
+  //Calcula norma do resíduo
+  *tTempoResiduo = timestamp();
+  normaResiduo = normaL2Residuo(R, n);
+  *tTempoResiduo += timestamp() - *tTempoResiduo;
+
+  return normaResiduo;
 }
 
 /*!
@@ -45,14 +62,15 @@ real_t normaL2Residuo(SistLinear_t *SL, real_t **I, real_t **R, int n, double *t
   \param n  ordem das matrizes quadradas
   \return 
 */
-void MultiplicaMQs(real_t** mA, real_t** mB, real_t** mR, int n) {
+void calculaMatrizResiduo(real_t** mA, real_t** mB, real_t** mI, real_t** mR, int n) {
 
   for (int i = 0; i < n; i ++) {
     for (int j = 0; j < n; j++) {
       mR[i][j] = 0.0;
-      for (int i = 0; i < n; i++)
-        mR[i][j] += mA[i][i] * mB[i][j];
+      for (int k = 0; k < n; k++)
+        mR[i][j] += mA[i][k] * mI[j][k];
     }
+    mR[i][i] = mB[i][i] - mR[i][i]; 
   }
   return;  
 }
@@ -94,7 +112,6 @@ void criaMatrizIdentidade(real_t **M, int n) {
         M[i][j] = 0.0;
     }
   }
-
   return;
 }
 
@@ -107,7 +124,6 @@ void criaMatrizIdentidade(real_t **M, int n) {
 real_t calculaDeterminante(real_t **M, int n) {
 
   real_t determinante = 1.0;
-
   for (int i = 0;  i < n; ++i) 
     determinante = determinante * M[i][i];
   return determinante;
@@ -127,7 +143,6 @@ real_t calculaDeterminante(real_t **M, int n) {
 int FatoracaoLU_PivoParcial(double** L, double** U, int n, int* P, double *tTotal) {
 
   *tTotal = timestamp();
-
   // ESCALONAMENTO: PIVOTEAMENTO PARCIAL DA MATRIZ A COPIADA EM U, 
   // COM TRIANGULAÇÃO RESULTANDO EM MATRIZ SUPERIOR
   for (int piv = 0; piv < n; piv++) {               // para cada equação (linha) da matriz A 
@@ -158,7 +173,6 @@ int FatoracaoLU_PivoParcial(double** L, double** U, int n, int* P, double *tTota
       }
     }
   }
-    
   *tTotal = timestamp() - *tTotal;
   return 0;
 }
@@ -223,17 +237,12 @@ void CalculaXFROMUY(real_t **U, real_t* y, int n, real_t *x){
   \param tTotalY médio para cáculo de y.
   \param tTotalX médio para cáculo de x.
 */
-int calculaInversa(real_t **L, real_t **U, real_t **I, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
+int calculaInversa(real_t **L, real_t **U, real_t **I, real_t *x, real_t *y, int *LUT, unsigned int n, double *tTotalY, double *tTotalX) {
 
   double tempo;
   int erro;
-
-  real_t *y = (real_t*)malloc(n * sizeof(real_t));
-  real_t *x = (real_t*)malloc(n * sizeof(real_t));
   real_t *b = (real_t*)malloc(n * sizeof(real_t));
-
   for(int i = 0; i < n; i++) {
-
     //inicializa b
     for(int j = 0; j < n; j++) {    
       b[j] = 0.0;
@@ -253,10 +262,25 @@ int calculaInversa(real_t **L, real_t **U, real_t **I, int *LUT, unsigned int n,
     }
   }
 
-  free(y);
-  free(x);
-
+  free(b);
   *tTotalY /= n;
   *tTotalX /= n;
+  return 0;
+}
+
+int calculaW(real_t **L, real_t **U, real_t **R, real_t **W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n) {
+
+  for(int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++){
+      vet[LUT[j]] = R[i][j];
+    }
+
+    CalculaYFROML(L, n, LUT, i, y, vet);
+    CalculaXFROMUY(U, y, n, x);
+
+    for(int j = 0; j < n; j++) {
+      W[LUT[i]][j] = x[j];
+    }
+  }
   return 0;
 }

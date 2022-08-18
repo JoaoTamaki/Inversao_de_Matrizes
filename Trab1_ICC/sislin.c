@@ -43,6 +43,42 @@ SistLinear_t* alocaSisLin(unsigned int n, tipoAloc_t tipo) {
   return (SL);
 }
 
+real_t *alocaVetor(int n) {
+
+  return (real_t *) malloc(n * sizeof(real_t));
+}
+
+real_t** alocaMatriz(int N) {
+
+  real_t **matriz;
+
+  matriz = (real_t**) malloc(N * sizeof(real_t*));
+  if (!matriz) {
+    fprintf(stderr,"Não foi possível alocar a matriz.\n");
+    exit(-1);
+  }
+  for (int i = 0; i < N; i++)
+    matriz[i] = (real_t*) malloc(N * sizeof(real_t));
+
+  return (matriz);
+}
+
+int* alocaeInicilizaVetor(int N) {
+
+  int *vetor;
+
+  vetor = (int*) malloc (N * sizeof(int));
+  if (!vetor) {
+    fprintf(stderr,"Não foi possível alocar o vetor.\n");
+    exit(-1);
+  }
+  for (int i = 0; i < N; i++)
+    vetor[i] = i;
+
+  return (vetor);
+
+}
+
 // Liberacao de memória
 void liberaSisLin(SistLinear_t *SL) {
   if (SL) {
@@ -52,14 +88,13 @@ void liberaSisLin(SistLinear_t *SL) {
       }
       else if (SL->tipoAloc_A == pontPont) {
         for (int i = 0; i < SL->n; ++i) free (SL->A[i]);
-      }      
+      }
       free(SL->A);
     }
-    
     // pequena alteração, pois b agora armazena a matriz identidade
-    if (SL->b[0]) {
-      free(SL->b[0]);
-      for (int i = 0; i < SL->n; ++i) free (SL->A[i]);
+    if (SL->b) {
+      for (int i = 0; i < SL->n; ++i) free (SL->b[i]);
+      free(SL->b);
     }
     free(SL);
   }
@@ -72,6 +107,7 @@ void liberaMatriz(real_t **m, unsigned int n){
   free(m);
 }
 
+//Inicialização de matriz
 /*!
   \brief Cria coeficientes e termos independentes do SL. FOI COMENTADO O B, JÁ QUE NO TRABALHO SERÁ A MATRIZ IDENTIDADE
   *
@@ -141,6 +177,7 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
   }
 }
 
+//Leitura de arquivo
 SistLinear_t *lerSisLinArq(FILE *arqin, tipoAloc_t tipo) {
   unsigned int n;
   SistLinear_t *SL;
@@ -155,6 +192,7 @@ SistLinear_t *lerSisLinArq(FILE *arqin, tipoAloc_t tipo) {
   return SL;
 }
 
+//Impressão de estruturas
 void prnSisLin(SistLinear_t *SL) {
   int n=SL->n;
 
@@ -212,21 +250,13 @@ void printaArquivoMatrizTransposta(FILE *fp_out, real_t **m, unsigned int n) {
   fprintf (fp_out, "\n\n");
 }
 
-//LINEAR OU COLUNAR??
+//Outras funções úteis
 void ordenaMatriz(real_t **m, real_t **mT, int *LUT, unsigned int n) {
   int i, j;
   for (i = 0; i < n; i ++){
     for (j = 0; j < n; j++)
       mT[LUT[i]][j] = m[i][j];
   }
-}
-
-real_t *alocaVetorZerado(real_t *x, int n) {
-
-  x = (real_t *) malloc(n * sizeof(real_t));
-  for (int i = 0; i < n; i++)
-    x[i] = 0.0;
-  return x;
 }
 
 int copia_matriz(real_t **x, real_t **y, int n) {
@@ -281,35 +311,4 @@ int parseArguments(int argc, char** argv, FILE** fp_in, FILE** fp_out, int *N, i
   }
   fprintf(stderr,"Número inválido de argumentos. Confira as entradas possíveis no README.\n");
   return -1;
-}
-
-real_t** alocaMatriz(int N) {
-
-  real_t **matriz;
-
-  matriz = (real_t**) malloc(N * sizeof(real_t*));
-  if (!matriz) {
-    fprintf(stderr,"Não foi possível alocar a matriz.\n");
-    exit(-1);
-  }
-  for (int i = 0; i < N; i++)
-    matriz[i] = (real_t*) malloc(N * sizeof(real_t));
-
-  return (matriz);
-}
-
-int* alocaeInicilizaVetor(int N) {
-
-  int *vetor;
-
-  vetor = (int*) malloc (N * sizeof(int));
-  if (!vetor) {
-    fprintf(stderr,"Não foi possível alocar o vetor.\n");
-    exit(-1);
-  }
-  for (int i = 0; i < N; i++)
-    vetor[i] = i;
-
-  return (vetor);
-
 }

@@ -1,6 +1,6 @@
     CC     = gcc -g
-    CFLAGS = -O3 -mavx -march=native
-    LFLAGS = -lm
+    CFLAGS =
+    LFLAGS = -lm -O3 -mavx -march=native
 
       PROG = invmat
       OBJS = utils.o \

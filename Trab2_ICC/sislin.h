@@ -30,7 +30,7 @@ typedef enum {
 
 // Alocaçao e desalocação de matrizes
 SistLinear_t* alocaSisLin (unsigned int n);
-real_t *alocaVetorZerado(real_t *x, int n);
+real_t *alocaVetor(int n);
 void liberaSisLin (SistLinear_t *SL);
 void iniSisLin (SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max);
 
