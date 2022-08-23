@@ -6,21 +6,21 @@
 #define ERRO 1.0e-6   // Tolerância para critérios de parada em métodos iterativos
 
 //----------------------------------------FUNCOES AUX----------------------------------------// 
-void calculaNovoI(real_t *I, real_t *W, unsigned int n);
-real_t normaL2Residuo(real_t *R, unsigned int n);
-real_t refinamento(SistLinear_t *SL, real_t *L, real_t *U, real_t *I, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, double *tTempoIter, double *tTempoResiduo);
-void calculaMatrizResiduo(real_t* mA, real_t* mB, real_t* mI, real_t* mR, int n);
-int encontraMaxColunaPivo(double* M, int pivNum, int n);
-void criaMatrizIdentidade(real_t *M, int n);
-real_t calculaDeterminante(real_t *M, int n);
+void calculaNovoI(real_t *I, real_t *W, unsigned int n, unsigned int pad);
+real_t normaL2Residuo(real_t *R, unsigned int n, unsigned int pad);
+real_t refinamento(SistLinear_t *SL, real_t *L, real_t *U, real_t *I, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int pad, double *tTempoIter, double *tTempoResiduo);
+void calculaMatrizResiduo(real_t* mA, real_t* mB, real_t* mI, real_t* mR, unsigned int n, unsigned int pad);
+unsigned int encontraMaxColunaPivo(double* M, unsigned int pivNum, unsigned int n, unsigned int pad);
+void criaMatrizIdentidade(real_t *M, unsigned int n, unsigned int pad);
+real_t calculaDeterminante(real_t *M, unsigned int n, unsigned int pad);
 
 //----------------------------------------FUNCOES LU----------------------------------------// 
-int FatoracaoLU_PivoParcial(double* L, double* U, int n, int* P, double *tTotal);
+int FatoracaoLU_PivoParcial(double* L, double* U, unsigned int n, unsigned int pad, int* LUT, double *tTotal);
 void TrocaElementosVetor(int *vet, int i1, int i2);
-void trocaLinhasMQ(double *M, int n, int l1, int l2);
-void CalculaYFROML(real_t *L, int n, int *LUT, int k, real_t* y, real_t* b);
-void CalculaXFROMUY(real_t *U, real_t* y, int n, real_t *x);
-void calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *LUT, unsigned int n);
-void calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n);
+void trocaLinhasMQ(double *M, unsigned int n, unsigned int pad, int l1, int l2);
+void CalculaYFROML(real_t *L, unsigned int n, unsigned int pad, int *LUT, int k, real_t* y, real_t *b);
+void CalculaXFROMUY(real_t *U, real_t* y, unsigned int n, unsigned int pad, real_t *x);
+void calculaInversa(real_t *L, real_t *U, real_t *I, real_t *x, real_t *y, int *LUT, unsigned int n, unsigned int pad);
+void calculaW(real_t *L, real_t *U, real_t *R, real_t *W, real_t *vet, real_t *x, real_t *y, int *LUT, unsigned int n, unsigned int pad);
 
 #endif // __METODOS_H__

@@ -6,14 +6,20 @@
 #include "sislin.h"
 
 // Alocaçao e desalocação de estruturas
-SistLinear_t* alocaSisLin(unsigned int n) {
-  SistLinear_t *SL = (SistLinear_t *) malloc(sizeof(SistLinear_t));
-  
+SistLinear_t* alocaSisLin(unsigned int n, unsigned int *pad) {
+  //Definição do PAD
+  if (n % 2 == 0)
+    *pad = 1;
+  else
+    *pad = 2;
+
+  printf("Pad: %d\n", *pad);
+
+  SistLinear_t *SL = aligned_alloc(16, (2*n*(*pad))*sizeof(real_t) + sizeof(SistLinear_t));    //Ta certo?
   if (SL) {    
     SL->n = n;
-    SL->A = (real_t *) malloc(n * n * sizeof(real_t *));
-    SL->b = (real_t *) malloc(n * n * sizeof(real_t *));
-
+    SL->A = alocaMatriz(n, *pad);
+    SL->b = alocaMatriz(n, *pad);
     if (!(SL->A) || !(SL->b)) {
       liberaSisLin(SL);
       return NULL;
@@ -22,16 +28,34 @@ SistLinear_t* alocaSisLin(unsigned int n) {
   return (SL);
 }
 
-real_t *alocaVetor(int n) {
+real_t* alocaVetor(unsigned int n, unsigned int pad) {
 
-  return (real_t *) malloc(n * sizeof(real_t));
+  real_t *vetor;
+  vetor = aligned_alloc(16, (n+pad)*sizeof(real_t));
+  if (!vetor) {
+    fprintf(stderr,"Não foi possível alocar o vetor.\n");
+    exit(-1);
+  }
+  return (vetor);
 }
 
-real_t* alocaMatriz(int N) {
+int* alocaVetorInt(unsigned int n, unsigned int pad) {
+
+  int *vetor;
+  unsigned int np = n + pad;
+  vetor = aligned_alloc(16, (np)*sizeof(int));
+  if (!vetor) {
+    fprintf(stderr,"Não foi possível alocar o vetor.\n");
+    exit(-1);
+  }
+  return (vetor);
+}
+
+real_t* alocaMatriz(unsigned int n, unsigned int pad) {
 
   real_t *matriz;
-
-  matriz = (real_t*) malloc(N * N * sizeof(real_t));
+  unsigned int np = n + pad;
+  matriz = aligned_alloc(16, n*np*sizeof(real_t));
   if (!matriz) {
     fprintf(stderr,"Não foi possível alocar a matriz.\n");
     exit(-1);
@@ -39,20 +63,14 @@ real_t* alocaMatriz(int N) {
   return (matriz);
 }
 
-int* alocaeInicilizaVetor(int N) {
+int* alocaeInicilizaVetor(unsigned int n, unsigned int pad) {
 
   int *vetor;
-
-  vetor = (int*) malloc (N * sizeof(int));
-  if (!vetor) {
-    fprintf(stderr,"Não foi possível alocar o vetor.\n");
-    exit(-1);
-  }
-  for (int i = 0; i < N; i++)
+  vetor = alocaVetorInt(n, pad);
+  for (int i = 0; i < n; i++)
     vetor[i] = i;
 
   return (vetor);
-
 }
 
 void liberaSisLin(SistLinear_t *SL) {
@@ -76,15 +94,16 @@ void liberaSisLin(SistLinear_t *SL) {
      comSolucao, eqNula, eqProporcional, eqCombLinear, hilbert 
   \param coef_max Maior valor para coeficientes e termos independentes
 */
-void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
+void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max, unsigned int pad) {
   unsigned int n = SL->n;
+  unsigned int np = n+pad;
   // para gerar valores no intervalo [0,coef_max]
   real_t invRandMax = ((real_t)coef_max / (real_t)RAND_MAX);
     
   if (tipo == hilbert) {
     for (unsigned int i = 0; i < n; ++i) {
       for (unsigned int j = 0; j < n; ++j)  {
-        SL->A[i*n+j] = 1.0 / (real_t)(i + j + 1);
+        SL->A[i*np+j] = 1.0 / (real_t)(i + j + 1);
       }
     }
   }
@@ -92,14 +111,14 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
     // inicializa a matriz A
     for (unsigned int i=0; i<n; ++i) {
       for (unsigned int j=0; j<n; ++j)  {
-        SL->A[i*n+j] = (real_t)rand() * invRandMax;
+        SL->A[i*np+j] = (real_t)rand() * invRandMax;
       }
     }
     if (tipo == eqNula) {
       // sorteia eq a ser "nula"
       unsigned int nula = rand() % n;
       for (unsigned int j=0; j<n; ++j) {
-        SL->A[nula*n+j] = 0.0;
+        SL->A[nula*np+j] = 0.0;
       }
     } 
     else if (tipo == eqProporcional) {
@@ -108,7 +127,7 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
       unsigned int propSrc = (propDst + 1) % n;
       real_t mult = (real_t)rand() * invRandMax;
       for (unsigned int j=0; j<n; ++j) {
-        SL->A[propDst*n+j] = SL->A[propSrc*n+j] * mult;
+        SL->A[propDst*np+j] = SL->A[propSrc*np+j] * mult;
       }
     } 
     else if (tipo == eqCombLinear) {
@@ -117,16 +136,16 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
       unsigned int combSrc1 = (combDst + 1) % n;
       unsigned int combSrc2 = (combDst + 2) % n;
       for (unsigned int j=0; j<n; ++j) {
-        SL->A[combDst*n+j] = SL->A[combSrc1*n+j] + SL->A[combSrc2*n+j];
+        SL->A[combDst*np+j] = SL->A[combSrc1*np+j] + SL->A[combSrc2*np+j];
       }
     }
     else if (tipo == diagDominante) {
       // aumenta o valor dos termos da diagonal principal
       for (unsigned int i=0; i<n; ++i) {
         real_t soma = 0.0;
-        for (unsigned int j=0; j < i; ++j) soma += SL->A[i*n+j];
-        for (unsigned int j=i+1; j < n; ++j) soma += SL->A[i*n+j];
-        SL->A[i*n+i] += soma;
+        for (unsigned int j=0; j < i; ++j) soma += SL->A[i*np+j];
+        for (unsigned int j=i+1; j < n; ++j) soma += SL->A[i*np+j];
+        SL->A[i*np+i] += soma;
       }
     }
   }
@@ -134,72 +153,60 @@ void iniSisLin(SistLinear_t *SL, tipoSistLinear_t tipo, real_t coef_max) {
 
 //Leitura e escrita de estruturas
 
-SistLinear_t *lerSisLinArq(FILE *arqin) {
+SistLinear_t *lerSisLinArq(FILE *arqin, unsigned int *pad) {
   unsigned int n;
   SistLinear_t *SL;
   fscanf(arqin, "%d",&n);
-
-  SL = alocaSisLin(n);
-
+  unsigned int np = n+(*pad);
+  SL = alocaSisLin(n, pad);
   for (int i = 0; i < n; ++i)
     for (int j = 0; j < n; ++j) 
-      fscanf(arqin, "%lf", &SL->A[i*n+j]);
+      fscanf(arqin, "%lf", &SL->A[i*np+j]);
   
   return SL;
 }
 
-void prnSisLin(SistLinear_t *SL) {
-  int n = SL->n;
+void prnSisLin(SistLinear_t *SL, unsigned int pad) {
+  unsigned int n = SL->n;
+  unsigned int np = n + pad;
 
-  for(int i = 0; i < n; ++i) {
-    printf("\n  ");
-    for(int j = 0; j < n; ++j)
-      printf("%.15g ", SL->A[i*n+j]);
-  }
-  printf("\n\n");
-  for (int i = 0; i < n; ++i) {
-    printf("\n  ");
-    for (int j = 0; j < n; ++j)
-      printf("%.15g ", SL->b[i*n+j]);
-  }
-  printf("\n\n");
+  prnMatriz(SL->A, n, pad);
+  prnMatriz(SL->b, n, pad);
 }
 
 void prnVetorInt(int *v, unsigned int n) {
-  int i;
 
   printf ("\n");
-  for (i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i)
     printf ("%d ", v[i]);
   printf ("\n\n");
 }
 
 void prnVetor(real_t *v, unsigned int n) {
-  int i;
 
   printf ("\n");
-  for(i = 0; i < n; ++i)
+  for(int i = 0; i < n; ++i)
       printf ("%.15g ", v[i]);
   printf ("\n\n");
 }
 
-void prnMatriz(real_t *m, unsigned int n) {
-  int i, j;
+void prnMatriz(real_t *m, unsigned int n, unsigned int pad) {
 
-  for (i = 0; i < n; ++i) {
-    for (j = 0; j < n; j++)
-      printf ("%.15g \t", m[i*n+j]);
+  unsigned int np = n + pad;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; j++)
+      printf ("%.15g \t", m[i*np+j]);
     printf ("\n");
   }
   printf ("\n\n");
 }
 
-void printaArquivoMatrizTransposta(FILE *fp_out, real_t *m, unsigned int n) {
-  int i, j;
+void printaArquivoMatrizTransposta(FILE *fp_out, real_t *m, unsigned int n, unsigned int pad) {
 
-  for (i = 0; i < n; ++i) {
-    for (j = 0; j < n; j++)
-      fprintf (fp_out, "%.15g ", m[j*n+i]);
+  unsigned int np = n + pad;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; j++)
+      fprintf (fp_out, "%.15g ", m[j*np+i]);
     fprintf (fp_out, "\n");
   }
   fprintf (fp_out, "\n\n");
@@ -207,24 +214,25 @@ void printaArquivoMatrizTransposta(FILE *fp_out, real_t *m, unsigned int n) {
 
 //Outras funções uteis
 
-void ordenaMatriz(real_t *m, real_t *mT, int *LUT, unsigned int n) {
-  int i, j;
-  for (i = 0; i < n; i ++){
-    for (j = 0; j < n; j++)
-      mT[LUT[i]*n+j] = m[i*n+j];
+void ordenaMatriz(real_t *m, real_t *mT, int *LUT, unsigned int n, unsigned int pad) {
+
+  unsigned int np = n + pad;
+  for (int i = 0; i < n; i ++){
+    for (int j = 0; j < n; j++)
+      mT[LUT[i]*np+j] = m[i*np+j];
   }
 }
 
-int copia_matriz(real_t *x, real_t *y, int n) {
-
+int copia_matriz(real_t *x, real_t *y, unsigned int n, unsigned int pad) {
+  unsigned int np = n + pad;
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) 
-      y[i*n+j] = x[i*n+j];
+      y[i*np+j] = x[i*np+j];
   }
   return 0;
 }
 
-int copia_vetor(real_t *x, real_t *y, int n) {
+int copia_vetor(real_t *x, real_t *y, unsigned int n, unsigned int pad) {
 
   for(int i = 0; i < n; i++)
     y[i] = x[i];
@@ -232,15 +240,15 @@ int copia_vetor(real_t *x, real_t *y, int n) {
   return 0;
 }
 
-int copiaSisLin(SistLinear_t *SL, SistLinear_t *SL_copia) {
+int copiaSisLin(SistLinear_t *SL, SistLinear_t *SL_copia, unsigned int pad) {
 
   SL_copia->n = SL->n;
-  copia_matriz(SL->A, SL_copia->A, SL->n);
-  copia_matriz(SL->b, SL_copia->b, SL->n);
+  copia_matriz(SL->A, SL_copia->A, SL->n, pad);
+  copia_matriz(SL->b, SL_copia->b, SL->n, pad);
   return 0;
 }
 
-int parseArguments(int argc, char** argv, FILE** fp_in, FILE** fp_out, int *N, int *k, int *flag_e, int *flag_s, int *flag_r, int *flag_i) {
+int parseArguments(int argc, char** argv, FILE** fp_in, FILE** fp_out, unsigned int *N, unsigned int *k, unsigned int *flag_e, unsigned int *flag_s, unsigned int *flag_r, unsigned int *flag_i) {
 
   if (argc >= 3 || argc <= 9) {
     for (int i = 1; i < argc; i = i + 2) {

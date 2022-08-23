@@ -7,22 +7,26 @@
 /*! LISTA DE MELHORIAS
 Duvidas:
   FEITO!
+
 O que já era feito antes:
   -> Look up table
   -> Eliminar stride na multiplicação de matrizes 
+  -> Questão de fazer matriz linear e colunar -> Fazer a tranposta apenas para a impressão para evitar Stride no acesso aos dados (multiplicação de matriz)
+
 O que foi feito:
+  -> Término do T1
   -> Matrizes alocadas contiguamente -> Melhorando o acesso a memória
   -> Economização de operações matemáticas
-O que deve ser feito:
-  -> CALCULO DO W E ARRUMAR REFINAMENTO
   -> Alligned_alloc -> Colunas não potências de 2 e linhas pode ser igual
-  -> Questão de fazer matriz linear e colunar -> Fazer a tranposta apenas para a impressão para evitar Stride no acesso aos dados (multiplicação de matriz)
+  -> Padding -> Evitar cache trashing
+
+O que deve ser feito:
   -> Restrict: Não aponta para o mesmo espaço de memória(vetor, matriz, ...)
   -> Inline: Tem que estar no mesmo codigo para expandir a função e eliminar o custo de empilhar parâmetros. 
-  -> Padding -> Evitar cache trashing
-  -> Calcular o w para somar com o A inicial
+  -> Arrumar T1 para bater com o T2
   -> Instrumentar LIKWID nas duas versões
   -> Realizar loop unroll and jam
+
 Testes:
   -> N={32, 33, 64, 65, 128, 129, 256, 257, 512, 1000, 2000, 4000 6000 10000}
   -> -i 10
@@ -53,68 +57,75 @@ int main (int argc, char** argv) {
   // cria e inicializa variáveis de entrada do programa
   FILE *fp_out = stdout;
   FILE *fp_in = stdin;
-  int flag_e, flag_s, flag_r, flag_i = 0;
-  int N = 0;
-  int k = 0;
+  unsigned int flag_e, flag_s, flag_r, flag_i = 0;
+  unsigned int N = 0;
+  unsigned int k = 0;
   
   // verifica se o argumentos de entrada são válidos
   if (parseArguments(argc, argv, &fp_in, &fp_out, &N, &k, &flag_e, &flag_s, &flag_r, &flag_i) == -1)
     return 0;
 
   // aloca ponteiros e outras variáveis necessárias:
-  SistLinear_t *SL;                     // SL, que vai armazenar a matriz original em A e a identidade em b
-  real_t *L, *U;                        // matrizes L e U, que serão usadas na fatoração LU da matriz A
-  int *LUT;                             // look up table (LUT), que será usada para armazenar as trocas de linha no pivoteamento
-  real_t tFatoracaoLU;                  // armazenará o tempo de execução da fatoração LU
+  SistLinear_t *SL;                         // SL, que vai armazenar a matriz original em A e a identidade em b
+  real_t *L, *U;                            // matrizes L e U, que serão usadas na fatoração LU da matriz A
+  int *LUT;                                 // look up table (LUT), que será usada para armazenar as trocas de linha no pivoteamento
+  real_t tFatoracaoLU;                      // armazenará o tempo de execução da fatoração LU
+
+  //inicializa o pad
+  unsigned int pad;
 
   // faz a alocação do SL que vai armazenar a matriz conforme o tipo de entrada
-  if (N > 0) {                          // caso a matriz seja gerada a partir de parâmetros
-    SL = alocaSisLin(N);
-    iniSisLin(SL, generico, COEF_MAX);
-  } else {                              // caso a matriz seja dada via arquivo
-    SL = lerSisLinArq(fp_in);
+  if (N > 0) {                              // caso a matriz seja gerada a partir de parâmetros
+    SL = alocaSisLin(N, &pad);
+    iniSisLin(SL, generico, COEF_MAX, pad);
+  } else {                                  // caso a matriz seja dada via arquivo
+    SL = lerSisLinArq(fp_in, &pad);
     N = SL->n;
   }
-  criaMatrizIdentidade(SL->b, N);       // inicializa os valores de b como uma matriz identidade
-  L = alocaMatriz(N);                   // aloca matriz L
-  U = alocaMatriz(N);                   // aloca matriz U
-  LUT = alocaeInicilizaVetor(N);        // aloca e inicializa LUT
 
-  copia_matriz(SL->A, U, N);
+  criaMatrizIdentidade(SL->b, N, pad);      // inicializa os valores de b como uma matriz identidade
+  L = alocaMatriz(N, pad);                  // aloca matriz L
+  U = alocaMatriz(N, pad);                  // aloca matriz U
+  LUT = alocaeInicilizaVetor(N, pad);       // aloca e inicializa LUT
+
+  copia_matriz(SL->A, U, N, pad);
 
   // faz a fatoração LU e armazena as trocas de linha na LUT
-  FatoracaoLU_PivoParcial(L, U, N, LUT, &tFatoracaoLU);
+  FatoracaoLU_PivoParcial(L, U, N, pad, LUT, &tFatoracaoLU);
 
   // calcula o determinante para saber se a matriz é inversível (determinante != 0)
-  real_t determinante = calculaDeterminante(U, N);
+  real_t determinante = calculaDeterminante(U, N, pad);
   if ((determinante > -ERRO) && (determinante < ERRO)) {
     fprintf(stderr,"A matriz não é inversível.\n");
     exit(-3);
   }
 
-  //printf("Matriz A:\n");
-  //prnMatriz(SL->A, N);
+  printf("A:\n");
+  prnMatriz(SL->A, N, pad);
 
   //Inicializa variaveis para calculo da inversa e refinamento
   double op1, op2;                              //Tempo de cada iteração do calculo da iteração (Op1) e do resíduo (Op2)
   double tTempoResiduo = 0.0, tTempoIter = 0.0; //Tempo total do calculo da iteração (Op1) e do resíduo (Op2)
-  real_t *I = alocaMatriz(N);                   //Matriz inversa conectada a LUT
-  real_t *Inversa = alocaMatriz(N);             //Matriz inversa ordenada para o refinamento
-  real_t *x = alocaVetor(N);                    //Vetor X para o calculo do X
-  real_t *y = alocaVetor(N);                    //Vetor Y para o calculo do Y
-  real_t *norma = alocaVetor(k);                //Vetor norma para armazenar as normas das iterações do calculo da inversa
-  real_t *R = alocaMatriz(N);                   //Matriz resíduo
-  real_t *W = alocaMatriz(N);                   //Matriz W para o refinamento
-  real_t *vet = alocaVetor(N);                  //Vetor Auxiliar para o calculo de w
+  real_t *I = alocaMatriz(N, pad);              //Matriz inversa conectada a LUT
+  real_t *Inversa = alocaMatriz(N, pad);        //Matriz inversa ordenada para o refinamento
+  real_t *x = alocaVetor(N, pad);               //Vetor X para o calculo do X
+  real_t *y = alocaVetor(N, pad);               //Vetor Y para o calculo do Y
+  real_t *norma = alocaVetor(k, pad);           //Vetor norma para armazenar as normas das iterações do calculo da inversa
+  real_t *R = alocaMatriz(N, pad);              //Matriz resíduo
+  real_t *W = alocaMatriz(N, pad);              //Matriz W para o refinamento
+  real_t *vet = alocaVetor(N, pad);             //Vetor Auxiliar para o calculo de w
 
   //Calcula a primeira inversa que está linear em vez de colunar
-  calculaInversa(L, U, I, x, y, LUT, N);
+  calculaInversa(L, U, I, x, y, LUT, N, pad);        
   //Ordena matriz inversa para ser usada sem LUT para o refinamento
-  ordenaMatriz(I, Inversa, LUT, N);
+  ordenaMatriz(I, Inversa, LUT, N, pad);
+
+  printf("Primeira Inversa com pad:\n");
+  prnMatriz(Inversa, N, pad);
 
   //Realiza Refinamento k iterações
   for (int i = 0; i < k; i++){
-    norma[i] = refinamento(SL, L, U, Inversa, R, W, vet, x, y, LUT, &op1, &op2);
+    norma[i] = refinamento(SL, L, U, Inversa, R, W, vet, x, y, LUT, pad, &op1, &op2);
     tTempoIter += op1;
     tTempoResiduo += op2;
     fprintf(fp_out, "# iter %d: %.15g\n", i+1, norma[i]);
@@ -126,7 +137,7 @@ int main (int argc, char** argv) {
   fprintf(fp_out, "# Tempo iter: %.15g\n", tTempoIter);
   fprintf(fp_out, "# Tempo residuo: %.15g\n", tTempoResiduo);
   fprintf(fp_out, "%d\n", N);
-  printaArquivoMatrizTransposta(fp_out, Inversa, N);
+  printaArquivoMatrizTransposta(fp_out, Inversa, N, pad);
 
   //Libera ponteiros
   liberaSisLin(SL);
@@ -144,4 +155,5 @@ int main (int argc, char** argv) {
 
   if (!fp_in) fclose (fp_in);
   if (!fp_out) fclose (fp_out);
+
 }
