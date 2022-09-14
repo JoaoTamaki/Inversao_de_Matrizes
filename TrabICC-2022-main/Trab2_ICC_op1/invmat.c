@@ -106,18 +106,7 @@ int main (int argc, char** argv) {
   if (!fp_out) fclose (fp_out);
 }
 
-//h35
-
-// likwid-perfctr -C 3 -g L3 ./invmat -r 4 -i 10
-// likwid-perfctr -C 3 -g L2CACHE ./invmat -r 4 -i 10
-// likwid-perfctr -C 3 -g FLOPS_DP ./invmat -r 4 -i 10
-// likwid-perfctr -C 3 -g FLOPS_AVX ./invmat -r 4 -i 10
-
-
 /*! LISTA DE MELHORIAS
-Duvidas:
-  FEITO!
-
 O que já era feito antes:
   -> Look up table
   -> Eliminar stride na multiplicação de matrizes 
@@ -133,17 +122,19 @@ O que foi feito:
   -> Inline: Tem que estar no mesmo codigo para expandir a função e eliminar o custo de empilhar parâmetros. 
   -> Instrumentar LIKWID nas duas versões
   -> Realizar loop unroll and jam
-
-O que deve ser feito:
-  -> Testar para onde usar restrict e inline (?)
   -> Script para testes
+  -> h35
+
+O que podia ser explorado melhor
+  -> Testar usos de Inline e Restrict
+  -> ...
 
 Observações:
   -> Por algum acaso no uroll and jam do calculo do x, fez ele variar um pouco (nas ultimas casas, ou seja, chega a ser irrelevante, mas não entendi porque ficou diferente)
+  -> Usar média de 10 tentativas
+  -> op1 e op2 do refinamento (Não contado o op1 da solução inicial da inversao)
 
 Testes:
-  -> N={32, 33, 64, 65, 128, 129, 256, 257, 512, 1000, 2000, 4000 6000 10000}
-  -> -i 10
   -> Ver como realizar os gráficos
       Cada teste deve apresentar em linhas distintas os valores para o cálculo de cada operações (op1 e op2). Assim, os gráficos terão sempre 4 linhas, duas para a v1 e duas para a v2;
       Cada gráfico deve ser explicado e você deve demonstrar que consegue entender o que está reportado nele;
@@ -154,11 +145,8 @@ Testes:
         Cache miss L1: utilizar o grupo CACHE ou L1CACHE do LIKWID, e apresentar o resultado de "data cache miss ratio".
         Caso não tenha o cache miss da L1, utilize o cache miss da L2 (grupo L2CACHE)
         Operações aritméticas: utilizar o grupo FLOPS_DP ou FLOPS_AVX do LIKWID, e apresentar o resultado de "MFLOP/s"
-    ######L3 e L2CACHE
 Apresentação:
   -> Realizar PDF com os gráficos e textos auxiliares
       O pacote deve ser arquivado e compactado com tar(1) e gzip(1) em um arquivo chamado login1-login2.tar.gz
-      O arquivo contendo o relatório deve ser nomeado RELATORIO-login1-login2.pdf.
       Além disso, a conclusão deve apresentar os aspectos que sua equipe considerou mais relevantes/importantes no desenvolvimento do trabalho.
-  -> No texto de entrega DEVE CONSTAR OBRIGATORIAMENTE o Nome e Números de Registro Acadêmico (RA) dos membros do grupo.
 */

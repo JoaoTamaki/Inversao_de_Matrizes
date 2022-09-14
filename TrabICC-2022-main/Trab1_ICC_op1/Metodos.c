@@ -100,8 +100,8 @@ real_t refinamento(SistLinear_t* SL, real_t** L, real_t** U, real_t** I, real_t*
   \return 
 */
 void calculaMatrizResiduo(real_t** mA, real_t** mB, real_t** mI, real_t** mR, int n) {
-  LIKWID_MARKER_INIT;
-  LIKWID_MARKER_START("op2");
+  //LIKWID_MARKER_INIT;
+  //LIKWID_MARKER_START("op2");
   for (int i = 0; i < n; i ++) {
     for (int j = 0; j < n; j++) {
       mR[i][j] = 0.0;
@@ -110,8 +110,8 @@ void calculaMatrizResiduo(real_t** mA, real_t** mB, real_t** mI, real_t** mR, in
     }
     mR[i][i] = mB[i][i] - mR[i][i]; 
   }
-  LIKWID_MARKER_STOP("op2");
-  LIKWID_MARKER_CLOSE;
+  //LIKWID_MARKER_STOP("op2");
+  //LIKWID_MARKER_CLOSE;
   return;  
 }
 
@@ -327,8 +327,8 @@ void calculaInversa(real_t** L, real_t** U, real_t** I, real_t* x, real_t* y, in
   \return
 */
 void calculaW(real_t** L, real_t** U, real_t** R, real_t** W, real_t* vet, real_t* x, real_t* y, int* LUT, unsigned int n) {
-  //LIKWID_MARKER_INIT;
-  //LIKWID_MARKER_START("op1");
+  LIKWID_MARKER_INIT;
+  LIKWID_MARKER_START("op1");
   for(int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++){
       vet[LUT[j]] = R[i][j];
@@ -339,6 +339,6 @@ void calculaW(real_t** L, real_t** U, real_t** R, real_t** W, real_t* vet, real_
       W[LUT[i]][j] = x[j];
     }
   }
-  //LIKWID_MARKER_STOP("op1");
-  //LIKWID_MARKER_CLOSE;
+  LIKWID_MARKER_STOP("op1");
+  LIKWID_MARKER_CLOSE;
 }
